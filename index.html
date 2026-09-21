@@ -91,8 +91,7 @@
         <button class="layer-pill" data-layer="bottomEva">5. Bottom EVA</button>
         <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
         <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
-        <button class="layer-pill" data-layer="inverter">8. Microinverter</button>
-        <button id="pill-central-inverter" class="layer-pill system-pill" data-layer="centralInverter" style="display: none;">⚡ Central Inverter</button>
+        <button id="pill-inverter" class="layer-pill" data-layer="inverter">8. Microinverter (MLPE)</button>
       </div>
 
       <!-- Bottom Control Dock -->
@@ -167,7 +166,7 @@
             Power Flow
           </button>
 
-          <button id="btn-toggle-central-inverter" class="hud-toggle-btn">
+          <button id="btn-toggle-inverter-mode" class="hud-toggle-btn" title="Switch between Rooftop Microinverter (MLPE) and Wall-Mounted Central String Inverter">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               <line x1="7" y1="8" x2="17" y2="8"></line>
@@ -175,7 +174,7 @@
               <circle cx="8" cy="16" r="1.5" fill="currentColor"></circle>
               <circle cx="16" cy="16" r="1.5" fill="currentColor"></circle>
             </svg>
-            Central Inverter
+            <span id="label-inverter-mode">Inverter: Micro (MLPE)</span>
           </button>
 
           <button id="btn-toggle-view" class="hud-toggle-btn">

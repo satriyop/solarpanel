@@ -282,42 +282,149 @@ export class CentralInverterModel {
       this.group.add(gland);
     });
 
-    // 10. Heavy-Duty Metallic EMT Conduit Run (Array to Central Inverter)
+    // 10. Rooftop Transition Box (Soladeck NEMA 3R Enclosure on Roof Plane)
+    this.initRooftopTransitionBox(metalBracketMat, darkAccentMat, brassGlandMat);
+
+    // 11. Heavy-Duty Metallic EMT Conduit Run (Soladeck to Central Inverter)
     this.initConduitRun(emtConduitMat);
+  }
+
+  /**
+   * Builds an authentic Rooftop Transition Box (Soladeck NEMA 3R) anchored on the 22° rooftop slope
+   * Receives the solar module's (+) and (-) MC4 DC cables and transitions them into EMT conduit.
+   */
+  initRooftopTransitionBox(bracketMat, darkMat, brassMat) {
+    this.soladeckGroup = new THREE.Group();
+    // Positioned right at the 22° tilted module right edge in local inverter space
+    this.soladeckGroup.position.set(-1.51, -0.095, -0.167);
+    this.soladeckGroup.rotation.x = 22 * (Math.PI / 180);
+
+    // 1. Galvanized Roof Flashing Plate (tucks under roof shingles)
+    const flashingGeo = new THREE.BoxGeometry(0.18, 0.003, 0.20);
+    const flashingMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.85,
+      roughness: 0.35
+    });
+    this.fadeMaterials.push(flashingMat);
+    const flashing = new THREE.Mesh(flashingGeo, flashingMat);
+    flashing.position.set(0, -0.002, 0);
+    flashing.receiveShadow = true;
+    flashing.userData.isCentralInverter = true;
+    this.soladeckGroup.add(flashing);
+
+    // 2. Weatherproof Sloped NEMA 3R Metal Box
+    const boxGeo = new THREE.BoxGeometry(0.13, 0.052, 0.11);
+    const boxMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.45,
+      metalness: 0.6
+    });
+    this.fadeMaterials.push(boxMat);
+    const box = new THREE.Mesh(boxGeo, boxMat);
+    box.position.set(0, 0.026, 0);
+    box.castShadow = true;
+    box.userData.isCentralInverter = true;
+    this.soladeckGroup.add(box);
+
+    // Weatherproof Lid Seam & Fasteners
+    const lidGeo = new THREE.BoxGeometry(0.136, 0.006, 0.116);
+    const lid = new THREE.Mesh(lidGeo, boxMat);
+    lid.position.set(0, 0.054, 0);
+    this.soladeckGroup.add(lid);
+
+    // 3. Two MC4 Female Input Receptacles (Left side, facing module DC leads)
+    const mc4PortGeo = new THREE.CylinderGeometry(0.0085, 0.0085, 0.024, 16);
+    const mc4PortMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.3 });
+    this.fadeMaterials.push(mc4PortMat);
+
+    [-0.025, 0.025].forEach((pz, idx) => {
+      const port = new THREE.Mesh(mc4PortGeo, mc4PortMat);
+      port.rotation.z = Math.PI / 2;
+      port.position.set(-0.072, 0.026, pz);
+      this.soladeckGroup.add(port);
+
+      // Color coding ring (Red for +, Blue for -)
+      const ringGeo = new THREE.CylinderGeometry(0.0095, 0.0095, 0.004, 16);
+      const ringMat = new THREE.MeshBasicMaterial({ color: idx === 0 ? 0xef4444 : 0x3b82f6 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.z = Math.PI / 2;
+      ring.position.set(-0.068, 0.026, pz);
+      this.soladeckGroup.add(ring);
+    });
+
+    // 4. Equipment Grounding Lug with Bare Copper Wire
+    const lugGeo = new THREE.BoxGeometry(0.012, 0.012, 0.012);
+    const lug = new THREE.Mesh(lugGeo, brassMat);
+    lug.position.set(0.045, 0.038, 0.048);
+    this.soladeckGroup.add(lug);
+
+    const groundWireCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.045, 0.038, 0.048),
+      new THREE.Vector3(0.06, 0.02, 0.07),
+      new THREE.Vector3(0.08, -0.002, 0.08)
+    ]);
+    const groundWireGeo = new THREE.TubeGeometry(groundWireCurve, 12, 0.0025, 8, false);
+    const groundWireMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.95, roughness: 0.2 });
+    this.fadeMaterials.push(groundWireMat);
+    const groundWire = new THREE.Mesh(groundWireGeo, groundWireMat);
+    this.soladeckGroup.add(groundWire);
+
+    // 5. Conduit Compression Fitting Hub (Right side of Soladeck box)
+    const hubGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.024, 16);
+    const hub = new THREE.Mesh(hubGeo, bracketMat);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(0.072, 0.026, 0);
+    this.soladeckGroup.add(hub);
+
+    this.group.add(this.soladeckGroup);
   }
 
   /**
    * Builds an authentic metallic EMT conduit path bridging the solar array to the Central Inverter
    */
   initConduitRun(emtMat) {
-    // 3D Path: Sweeping from panel array over to inverter DC gland
-    // Start at solar array output: (-1.60, -0.15, 0.20) relative to Inverter
-    // Bend into horizontal wall run: (-0.65, -0.40, 0.02)
-    // Terminate at Inverter left DC gland: (-0.14, -0.37, 0.01)
+    // 3D Path: Continuous closed-loop from Soladeck Hub to Central Inverter DC_PV gland
+    // Point 0: Firmly mated to Soladeck box conduit hub
+    // Point 1: Sweeping along the roof eaves / rafters
+    // Point 2: 90° smooth radius transition bend onto the equipment wall
+    // Point 3: Horizontal run secured by unistrut straps
+    // Point 4: Sweep into Central Inverter left MPPT gland
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.60, -0.15, 0.20),
-      new THREE.Vector3(-1.20, -0.28, 0.12),
-      new THREE.Vector3(-0.65, -0.40, 0.02),
-      new THREE.Vector3(-0.14, -0.40, 0.01),
-      new THREE.Vector3(-0.14, -0.37, 0.01)
+      new THREE.Vector3(-1.438, -0.095, -0.167),
+      new THREE.Vector3(-1.18, -0.16, -0.12),
+      new THREE.Vector3(-0.75, -0.26, 0.01),
+      new THREE.Vector3(-0.40, -0.38, 0.01),
+      new THREE.Vector3(-0.14, -0.38, 0.01),
+      new THREE.Vector3(-0.14, -0.365, 0.01)
     ]);
     this.conduitCurve = curve;
 
-    const pipeGeo = new THREE.TubeGeometry(curve, 48, 0.014, 16, false);
+    const pipeGeo = new THREE.TubeGeometry(curve, 54, 0.014, 16, false);
     const pipeMesh = new THREE.Mesh(pipeGeo, emtMat);
     pipeMesh.castShadow = true;
     pipeMesh.userData.isCentralInverter = true;
     this.group.add(pipeMesh);
+
+    // Compression locknut fittings at conduit entry/exit
+    const locknutGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.016, 6); // Hex nut
+    const locknutMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.3 });
+    this.fadeMaterials.push(locknutMat);
+
+    // Inverter entry locknut
+    const locknutInv = new THREE.Mesh(locknutGeo, locknutMat);
+    locknutInv.position.set(-0.14, -0.365, 0.01);
+    this.group.add(locknutInv);
 
     // Wall unistrut mounting straps for conduit
     const strapGeo = new THREE.CylinderGeometry(0.017, 0.017, 0.018, 16);
     const strapMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.35 });
     this.fadeMaterials.push(strapMat);
 
-    [-1.0, -0.5].forEach((sx) => {
+    [-0.95, -0.50].forEach((sx) => {
       const strap = new THREE.Mesh(strapGeo, strapMat);
       strap.rotation.z = Math.PI / 2;
-      strap.position.set(sx, -0.40, 0.01);
+      strap.position.set(sx, -0.38, 0.01);
       this.group.add(strap);
     });
 

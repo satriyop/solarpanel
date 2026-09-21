@@ -568,8 +568,27 @@ export class SolarPanelModel {
       jboxGroup.add(collar);
     });
 
-    // Realistic Curved Solar Cables
-    const createCable = (startX, isPositive) => {
+    // Cable groups for Microinverter vs Central Inverter architecture
+    this.jboxMicroCables = new THREE.Group();
+    this.jboxCentralCables = new THREE.Group();
+    this.jboxCentralCables.visible = false;
+    jboxGroup.add(this.jboxMicroCables);
+    jboxGroup.add(this.jboxCentralCables);
+
+    const cableMat = new THREE.MeshStandardMaterial({
+      color: 0x181a1e,
+      roughness: 0.52,
+      metalness: 0.08
+    });
+    const mc4Mat = new THREE.MeshStandardMaterial({
+      color: 0x141619,
+      roughness: 0.32,
+      metalness: 0.25
+    });
+    const clipMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8 });
+
+    // 1. Cables routing to rooftop Microinverter (at Z = +0.06m)
+    const createMicroCable = (startX, isPositive) => {
       const curve = new THREE.CatmullRomCurve3([
         new THREE.Vector3(startX, -boxH / 2, -0.45 + boxL / 2 + 0.02),
         new THREE.Vector3(startX * 1.3, -boxH * 1.4, -0.45 + boxL / 2 + 0.10),
@@ -579,52 +598,76 @@ export class SolarPanelModel {
       ]);
 
       const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.0055, 12, false);
-      const cableMat = new THREE.MeshStandardMaterial({
-        color: 0x181a1e,
-        roughness: 0.52,
-        metalness: 0.08
-      });
       const cable = new THREE.Mesh(tubeGeo, cableMat);
       cable.castShadow = true;
-      jboxGroup.add(cable);
+      this.jboxMicroCables.add(cable);
 
-      // Color Identification Band (Red = Positive, Blue/Black = Negative)
-      const bandGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.018, 16);
       const bandMat = new THREE.MeshStandardMaterial({
         color: isPositive ? 0xd92626 : 0x2563eb,
         roughness: 0.35,
         metalness: 0.1
       });
+      const bandGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.018, 16);
       const band = new THREE.Mesh(bandGeo, bandMat);
-      const bandPos = curve.getPointAt(0.28);
-      band.position.copy(bandPos);
+      band.position.copy(curve.getPointAt(0.28));
       band.rotation.x = Math.PI / 2;
-      jboxGroup.add(band);
+      this.jboxMicroCables.add(band);
 
-      // MC4 Connector at end of cable
       const mc4EndPos = curve.getPointAt(1.0);
       const mc4Geo = new THREE.CylinderGeometry(0.009, 0.009, 0.048, 16);
-      const mc4Mat = new THREE.MeshStandardMaterial({
-        color: 0x141619,
-        roughness: 0.32,
-        metalness: 0.25
-      });
       const mc4 = new THREE.Mesh(mc4Geo, mc4Mat);
       mc4.position.copy(mc4EndPos);
       mc4.rotation.x = Math.PI / 2;
       mc4.castShadow = true;
-      jboxGroup.add(mc4);
+      this.jboxMicroCables.add(mc4);
 
-      // MC4 Locking clip detail
       const clipGeo = new THREE.BoxGeometry(0.004, 0.004, 0.02);
-      const clipMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8 });
       const clip = new THREE.Mesh(clipGeo, clipMat);
       clip.position.set(mc4EndPos.x, mc4EndPos.y + 0.008, mc4EndPos.z);
-      jboxGroup.add(clip);
+      this.jboxMicroCables.add(clip);
     };
 
-    createCable(-0.045, true);  // Positive (+)
-    createCable(0.045, false);  // Negative (-)
+    createMicroCable(-0.045, true);  // Positive (+)
+    createMicroCable(0.045, false);  // Negative (-)
+
+    // 2. Cables routing to Rooftop Transition Box (Soladeck) at module edge (X = +0.50m)
+    const createCentralCable = (startX, isPositive) => {
+      const zOffset = isPositive ? -0.012 : 0.012;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(startX, -boxH / 2, -0.45 + boxL / 2 + 0.02),
+        new THREE.Vector3(startX + 0.10, -boxH * 1.3, -0.45 + boxL / 2 + 0.06 + zOffset),
+        new THREE.Vector3(0.24, -boxH * 1.6, -0.45 + boxL / 2 + 0.08 + zOffset),
+        new THREE.Vector3(0.38, -boxH * 1.4, -0.45 + boxL / 2 + 0.07 + zOffset),
+        new THREE.Vector3(0.50, -boxH * 1.1, -0.45 + boxL / 2 + 0.07 + zOffset)
+      ]);
+
+      const tubeGeo = new THREE.TubeGeometry(curve, 36, 0.0055, 12, false);
+      const cable = new THREE.Mesh(tubeGeo, cableMat);
+      cable.castShadow = true;
+      this.jboxCentralCables.add(cable);
+
+      const bandMat = new THREE.MeshStandardMaterial({
+        color: isPositive ? 0xd92626 : 0x2563eb,
+        roughness: 0.35,
+        metalness: 0.1
+      });
+      const bandGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.018, 16);
+      const band = new THREE.Mesh(bandGeo, bandMat);
+      band.position.copy(curve.getPointAt(0.35));
+      band.rotation.z = Math.PI / 2;
+      this.jboxCentralCables.add(band);
+
+      const mc4EndPos = curve.getPointAt(1.0);
+      const mc4Geo = new THREE.CylinderGeometry(0.009, 0.009, 0.048, 16);
+      const mc4 = new THREE.Mesh(mc4Geo, mc4Mat);
+      mc4.position.copy(mc4EndPos);
+      mc4.rotation.z = Math.PI / 2;
+      mc4.castShadow = true;
+      this.jboxCentralCables.add(mc4);
+    };
+
+    createCentralCable(-0.045, true);  // Positive (+)
+    createCentralCable(0.045, false);  // Negative (-)
 
     return jboxGroup;
   }
@@ -637,6 +680,7 @@ export class SolarPanelModel {
    */
   createMicroinverter() {
     const inverterGroup = new THREE.Group();
+    this.inverterGroup = inverterGroup;
 
     // The microinverter is positioned downstream of the junction box in Z space
     // Junction box is at Z = -0.45; MC4 cable ends extend to Z = +0.06
@@ -909,4 +953,23 @@ export class SolarPanelModel {
       this.cellMat.emissiveIntensity = Math.max(0, 0.28 * Math.pow(cosVal, 1.2));
     }
   }
+
+  /**
+   * Switch between Microinverter (MLPE) architecture and Central / String Inverter architecture
+   */
+  setInverterMode(mode) {
+    this.inverterMode = mode; // 'micro' or 'central'
+    const isMicro = (mode === 'micro');
+
+    if (this.inverterGroup) {
+      this.inverterGroup.visible = isMicro;
+    }
+    if (this.jboxMicroCables) {
+      this.jboxMicroCables.visible = isMicro;
+    }
+    if (this.jboxCentralCables) {
+      this.jboxCentralCables.visible = !isMicro;
+    }
+  }
 }
+

@@ -38,10 +38,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnTogglePower = document.getElementById('btn-toggle-power');
-  const btnToggleCentralInverter = document.getElementById('btn-toggle-central-inverter');
+  const btnToggleInverterMode = document.getElementById('btn-toggle-inverter-mode');
+  const labelInverterMode = document.getElementById('label-inverter-mode');
   const btnToggleView = document.getElementById('btn-toggle-view');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
-  const pillCentralInverter = document.getElementById('pill-central-inverter');
+  const pillInverter = document.getElementById('pill-inverter');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
   const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
@@ -51,7 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isDarkTheme = true;
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
-  let isCentralInverterActive = false;
+  let currentInverterMode = 'micro'; // 'micro' (rooftop MLPE) or 'central' (wall-mounted string)
   let isUndersideView = false;
   let currentWatts = 410;
 
@@ -220,18 +221,45 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Central Inverter Toggle (Wall-Mounted 5.0kW Hybrid String Inverter)
-  if (btnToggleCentralInverter) {
-    btnToggleCentralInverter.addEventListener('click', () => {
-      isCentralInverterActive = !isCentralInverterActive;
-      btnToggleCentralInverter.classList.toggle('active', isCentralInverterActive);
-      centralInverter.setVisible(isCentralInverterActive);
-      if (pillCentralInverter) {
-        pillCentralInverter.style.display = isCentralInverterActive ? 'inline-block' : 'none';
-      }
-      if (isCentralInverterActive) {
-        centralInverter.updateTelemetry(currentWatts);
-      }
+  // Function to switch between Inverter Architectures (Microinverter vs Central String Inverter)
+  function setInverterArchitecture(mode) {
+    currentInverterMode = mode;
+    const isCentral = (mode === 'central');
+
+    // 1. Reconfigure 3D Solar Panel underside (show/hide microinverter & swap DC leads)
+    solarPanel.setInverterMode(mode);
+
+    // 2. Reconfigure electrical particle routing
+    powerFlow.setInverterMode(mode);
+
+    // 3. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
+    centralInverter.setVisible(isCentral);
+
+    // 4. Update HUD switcher button
+    if (btnToggleInverterMode) {
+      btnToggleInverterMode.classList.toggle('active', isCentral);
+    }
+    if (labelInverterMode) {
+      labelInverterMode.textContent = isCentral ? 'Inverter: Central (5kW)' : 'Inverter: Micro (MLPE)';
+    }
+
+    // 5. Update Layer Pill label
+    if (pillInverter) {
+      pillInverter.textContent = isCentral ? '8. Central Inverter (5kW)' : '8. Microinverter (MLPE)';
+      pillInverter.dataset.layer = isCentral ? 'centralInverter' : 'inverter';
+    }
+
+    // 6. Update Central Inverter live telemetry if active
+    if (isCentral) {
+      centralInverter.updateTelemetry(currentWatts);
+    }
+  }
+
+  // Inverter Architecture Switcher (Roof Microinverter vs Wall Central Inverter)
+  if (btnToggleInverterMode) {
+    btnToggleInverterMode.addEventListener('click', () => {
+      const nextMode = (currentInverterMode === 'micro') ? 'central' : 'micro';
+      setInverterArchitecture(nextMode);
     });
   }
 
@@ -289,10 +317,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize at 0° High Noon
   updateSolarGeneration(0);
 
-  // Set default visual presets: Dark Studio
+  // Set default visual presets: Dark Studio & Microinverter MLPE architecture
   studio.setStudioTheme(true);
   studio.setSunSimulatorVisible(false);
   solarPanel.setSunAbsorption(1.0);
+  setInverterArchitecture('micro');
 
   // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel
   autoCycleTimer = setTimeout(() => {
