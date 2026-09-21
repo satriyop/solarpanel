@@ -230,10 +230,6 @@ export class StudioScene {
     }
   }
 
-  setSuperResolution(enabled) {
-    const dpr = enabled ? Math.min(window.devicePixelRatio * 1.5, 3.0) : Math.min(window.devicePixelRatio, 2.0);
-    this.renderer.setPixelRatio(dpr);
-  }
 
 
   /**

@@ -22,10 +22,11 @@ A real-time, photorealistic 3D exploded view diagram of a residential solar pane
 - **Interactive Engineering HUD**:
   - Smooth vertical separation slider (`0%` Assembled to `100%` Exploded diagram).
   - Quick-action presets for Start (Assembled) and End (Exploded) frames.
-  - Dynamic 4-corner CAD vertical alignment guide lines.
+  - Automatic looping cycle and 360° orbital camera panning.
   - 3D screen-space projected annotations with leader lines.
+  - Interactive Solar Irradiance simulator with real-time ASHRAE IAM power generation curves.
   - Layer isolation filter pills (`All`, `Frame`, `Glass`, `Cells`, etc.).
-  - 4K detail toggle and Dark/Light studio theme switcher.
+  - Dark/Light studio theme switcher with native Retina high-DPI rendering.
 
 ## Getting Started
 

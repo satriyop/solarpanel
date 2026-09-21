@@ -27,14 +27,12 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
-  const btnToggle4k = document.getElementById('btn-toggle-4k');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
   let isDarkTheme = true;
-  let is4kEnabled = true;
   let isSunSimulatorActive = false;
 
   let currentSunAngle = 0;
@@ -197,13 +195,6 @@ window.addEventListener('DOMContentLoaded', () => {
     studio.setStudioTheme(isDarkTheme);
   });
 
-  // 4K Super Resolution Toggle
-  btnToggle4k.addEventListener('click', () => {
-    is4kEnabled = !is4kEnabled;
-    btnToggle4k.classList.toggle('active', is4kEnabled);
-    studio.setSuperResolution(is4kEnabled);
-  });
-
   // Start Frame: Fully Assembled
   btnStartFrame.addEventListener('click', () => {
     stopAutoCycle();
@@ -235,9 +226,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize at 0° High Noon
   updateSolarGeneration(0);
 
-  // Set default visual presets: Dark Studio & 4K Super Resolution
+  // Set default visual presets: Dark Studio
   studio.setStudioTheme(true);
-  studio.setSuperResolution(true);
   studio.setSunSimulatorVisible(false);
   solarPanel.setSunAbsorption(1.0);
 
