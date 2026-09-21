@@ -84,10 +84,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const gTotal = Math.min(1000, gDirect + gDiffuse);
     const relG = Math.max(0.045, gTotal / 1000);
 
-    // Shockley Diode equation: Voltage drops logarithmically with irradiance
-    const vmp = (35.6 * (1.0 + 0.038 * Math.log(relG))).toFixed(1);
-    // Short-circuit & operating current scales linearly with photon flux
-    const imp = (11.5 * relG).toFixed(1);
+    // Shockley Diode equation: 410Wp+ Half-Cut module (Vmp ~31.6V, Imp ~13.0A at STC)
+    const vmp = (31.6 * (1.0 + 0.038 * Math.log(relG))).toFixed(1);
+    // Operating current scales linearly with tropical photon flux
+    const imp = (13.0 * relG).toFixed(1);
     // Real electrical power in Watts
     const watts = Math.min(410, Math.round(parseFloat(vmp) * parseFloat(imp)));
     currentWatts = watts;
@@ -263,12 +263,12 @@ window.addEventListener('DOMContentLoaded', () => {
       btnToggleInverterMode.classList.toggle('active', isCentral);
     }
     if (labelInverterMode) {
-      labelInverterMode.textContent = isCentral ? 'Inverter: Central (5kW)' : 'Inverter: Micro (MLPE)';
+      labelInverterMode.textContent = isCentral ? 'Inverter: Central Hybrid (5kW 220V)' : 'Inverter: Micro (220V PLN)';
     }
 
     // 5. Update Layer Pill label
     if (pillInverter) {
-      pillInverter.textContent = isCentral ? '8. Central Inverter (5kW)' : '8. Microinverter (MLPE)';
+      pillInverter.textContent = isCentral ? '8. Central Inverter (5kW 220V)' : '8. Microinverter (220V)';
       pillInverter.dataset.layer = isCentral ? 'centralInverter' : 'inverter';
     }
 
@@ -304,7 +304,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (btnToggleBattery) {
         btnToggleBattery.disabled = true;
         btnToggleBattery.classList.add('btn-disabled');
-        btnToggleBattery.title = 'DC Battery requires Central Hybrid Inverter (DC-Coupled)';
+        btnToggleBattery.title = 'Baterai DC memerlukan Central Hybrid Inverter (DC-Coupled)';
       }
     }
   }
@@ -322,7 +322,7 @@ window.addEventListener('DOMContentLoaded', () => {
     btnToggleBattery.addEventListener('click', () => {
       // If user clicks in Microinverter mode, show educational toast notification
       if (currentInverterMode === 'micro') {
-        showToast('💡 <strong>DC Battery Disabled:</strong> 400V DC battery requires Central Hybrid Inverter architecture (DC-Coupled). Switch inverter to Central (5kW) to enable.');
+        showToast('💡 <strong>Baterai DC Nonaktif:</strong> Baterai 400V DC memerlukan arsitektur Central Hybrid Inverter untuk terhubung ke sistem PLTS Atap 220V PLN. Alihkan ke Central Inverter.');
         return;
       }
 

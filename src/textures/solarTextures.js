@@ -253,19 +253,19 @@ export function createBacksheetTexture() {
   ctx.fillRect(labelX, labelY, labelW, 46);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('SOLARSPEC TITAN MONO 410W', labelX + 20, labelY + 31);
+  ctx.fillText('TIER-1 MONO PERC 410Wp+ (PLTS ATAP)', labelX + 20, labelY + 31);
 
-  // Electrical specs
+  // Electrical specs (Indonesian 410Wp+ STC Reference)
   ctx.font = '15px ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
   ctx.fillStyle = '#334155';
-  ctx.fillText('Model: PV-M60-410-PRO', labelX + 24, labelY + 80);
-  ctx.fillText('Max Power (Pmax):        410 W', labelX + 24, labelY + 110);
-  ctx.fillText('Open-Circuit V (Voc):    42.3 V', labelX + 24, labelY + 135);
-  ctx.fillText('Short-Circuit I (Isc):   12.4 A', labelX + 24, labelY + 160);
-  ctx.fillText('Opt Operating V (Vmp):   35.6 V', labelX + 24, labelY + 185);
-  ctx.fillText('Opt Operating I (Imp):   11.5 A', labelX + 24, labelY + 210);
-  ctx.fillText('Max System Voltage:      1500 V DC', labelX + 24, labelY + 235);
-  ctx.fillText('Class II / IP68 / Fire Rating: Type 1', labelX + 24, labelY + 260);
+  ctx.fillText('Model: PV-M108-410W-ID (Half-Cut)', labelX + 24, labelY + 80);
+  ctx.fillText('Max Power (Pmax):        410 Wp (STC)', labelX + 24, labelY + 110);
+  ctx.fillText('Open-Circuit V (Voc):    37.8 V', labelX + 24, labelY + 135);
+  ctx.fillText('Short-Circuit I (Isc):   13.6 A', labelX + 24, labelY + 160);
+  ctx.fillText('Opt Operating V (Vmp):   31.6 V', labelX + 24, labelY + 185);
+  ctx.fillText('Opt Operating I (Imp):   13.0 A', labelX + 24, labelY + 210);
+  ctx.fillText('Max System Voltage:      1500 V DC | IP68 Split J-Box', labelX + 24, labelY + 235);
+  ctx.fillText('Sertifikasi: SNI 04-3850.2 / IEC 61215 / IEC 61730', labelX + 24, labelY + 260);
 
   // Warning triangle badge
   ctx.fillStyle = '#eab308';
@@ -282,7 +282,7 @@ export function createBacksheetTexture() {
   ctx.font = 'bold 28px sans-serif';
   ctx.fillText('!', labelX + labelW - 71, labelY + 128);
 
-  // Barcode and CE/TUV compliance marks
+  // Barcode and SNI / TKDN compliance marks
   ctx.fillStyle = '#0f172a';
   for (let b = 0; b < 40; b++) {
     const bx = labelX + 24 + b * 11;
@@ -290,7 +290,7 @@ export function createBacksheetTexture() {
     ctx.fillRect(bx, labelY + 290, bw, 42);
   }
   ctx.font = '13px monospace';
-  ctx.fillText('SN: PV-2026-TITAN-994182-EU | TUV IEC 61215 / 61730', labelX + 24, labelY + 355);
+  ctx.fillText('SN: ID-PLTS-2026-410W-994182 | SNI & TKDN CERTIFIED', labelX + 24, labelY + 355);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -427,12 +427,12 @@ export function createMicroinverterPlateTexture() {
 
   // Header Brand & Model
   ctx.fillStyle = '#0f172a';
-  ctx.font = 'bold 26px "JetBrains Mono", monospace, sans-serif';
-  ctx.fillText('ENPHASE IQ8+ MLPE', 32, 48);
+  ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillText('ENPHASE IQ8+ (PLN 220V/50Hz)', 32, 48);
 
   ctx.font = '14px sans-serif';
   ctx.fillStyle = '#334155';
-  ctx.fillText('Grid-Interactive Microinverter with Rapid Shutdown', 32, 70);
+  ctx.fillText('Microinverter PLTS Atap with Anti-Islanding Protection', 32, 70);
 
   // Divider line
   ctx.strokeStyle = '#94a3b8';
@@ -445,26 +445,26 @@ export function createMicroinverterPlateTexture() {
   // Electrical Specs Table
   ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#0f172a';
-  ctx.fillText('DC INPUT (PV):', 32, 110);
+  ctx.fillText('DC INPUT (PV 400Wp+):', 32, 110);
   ctx.font = '14px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText('Vdc: 25 - 58V | Imax: 12.0A | Pmax: 440W', 32, 130);
+  ctx.fillText('Vdc: 25 - 58V | Imax: 13.5A | Pmax: 440Wp+', 32, 130);
 
   ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#0f172a';
-  ctx.fillText('AC OUTPUT (GRID):', 32, 160);
+  ctx.fillText('AC OUTPUT (PLN GRID):', 32, 160);
   ctx.font = '14px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText('Vac: 240V (Split-Phase) | 60Hz | 300VA | 1.25A', 32, 180);
+  ctx.fillText('Vac: 220V (Single-Phase) | 50.0Hz | 300VA | 1.36A', 32, 180);
 
   // Efficiency & Certifications
   ctx.font = 'bold 13px sans-serif';
   ctx.fillStyle = '#047857';
-  ctx.fillText('CEC EFFICIENCY: 97.5% • NEMA TYPE 4X / IP67', 32, 212);
+  ctx.fillText('EFFICIENCY: 97.5% • IP67 OUTDOOR WEATHERPROOF', 32, 212);
 
   ctx.font = '12px sans-serif';
   ctx.fillStyle = '#64748b';
-  ctx.fillText('UL 1741-SB / IEEE 1547-2018 • NEC 690.12 Compliant', 32, 232);
+  ctx.fillText('SNI / IEC 62116 / IEC 62109 • Grid Profile: ID-PLN-50Hz', 32, 232);
 
   // QR / Matrix Code Graphic
   ctx.fillStyle = '#0f172a';
@@ -516,12 +516,12 @@ export function createCentralInverterScreenTexture() {
 
     ctx.font = 'bold 13px "JetBrains Mono", monospace, sans-serif';
     ctx.fillStyle = '#10b981';
-    ctx.fillText('GRID-TIED ONLINE', 42, 30);
+    ctx.fillText('PLN GRID-TIED ONLINE', 42, 30);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px "JetBrains Mono", monospace, sans-serif';
-    ctx.fillText('MPPT 1 & 2 ACTIVE', 240, 30);
-    ctx.fillText('12:45 PM', 430, 30);
+    ctx.fillText('MPPT 1 & 2 • 220V/50Hz', 220, 30);
+    ctx.fillText('12:45 WIB', 420, 30);
 
     // Scale residential array wattage (simulate a typical 4kW residential string array based on current panel wattage)
     const arrayMultiplier = 9.8; // ~4.0 kW array at 410W panel reference
@@ -541,7 +541,7 @@ export function createCentralInverterScreenTexture() {
 
     ctx.font = '12px sans-serif';
     ctx.fillStyle = '#64748b';
-    ctx.fillText('REAL-TIME SOLAR INVERTER OUTPUT (PAC)', 24, 126);
+    ctx.fillText('OUTPUT DAYA PLTS ATAP (PAC) KE BEBAN & PLN', 24, 126);
 
     // Horizontal divider
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
@@ -556,9 +556,9 @@ export function createCentralInverterScreenTexture() {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#64748b';
     ctx.fillText('DC INPUT (V/I)', 24, colY);
-    ctx.fillText('GRID VOLTAGE', 150, colY);
+    ctx.fillText('TEGANGAN PLN', 150, colY);
     ctx.fillText('DAY YIELD', 270, colY);
-    ctx.fillText('CEC EFFICIENCY', 380, colY);
+    ctx.fillText('EFISIENSI CEC', 380, colY);
 
     ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
     ctx.fillStyle = '#e2e8f0';
@@ -566,7 +566,7 @@ export function createCentralInverterScreenTexture() {
     const dcV = (380 + (watts / 410) * 35).toFixed(0);
     const dcA = ((totalWatts / dcV) || 0).toFixed(1);
     ctx.fillText(`${dcV}V / ${dcA}A`, 24, colY + 22);
-    ctx.fillText('240V / 60Hz', 150, colY + 22);
+    ctx.fillText('220V / 50Hz', 150, colY + 22);
     ctx.fillText('18.4 kWh', 270, colY + 22);
 
     ctx.fillStyle = '#10b981';
@@ -632,11 +632,11 @@ export function createCentralInverterSpecPlateTexture() {
   // Header Title
   ctx.fillStyle = '#0f172a';
   ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
-  ctx.fillText('HYBRID STRING INVERTER 5.0kW', 28, 44);
+  ctx.fillText('HYBRID STRING INVERTER 5.0kW (PLN GRID)', 28, 44);
 
   ctx.font = '13px sans-serif';
   ctx.fillStyle = '#334155';
-  ctx.fillText('Grid-Tied PV Inverter with Integrated Rapid Shutdown & Energy Storage Bus', 28, 66);
+  ctx.fillText('Single-Phase 220V/50Hz Hybrid Inverter with EPS Backup & Zero-Export', 28, 66);
 
   ctx.strokeStyle = '#94a3b8';
   ctx.lineWidth = 1.5;
@@ -645,29 +645,29 @@ export function createCentralInverterSpecPlateTexture() {
   ctx.lineTo(484, 78);
   ctx.stroke();
 
-  // DC Input Ratings
+  // DC Input Ratings (400Wp+ String compatible)
   ctx.font = 'bold 14px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#0f172a';
-  ctx.fillText('PV DC INPUT (DUAL MPPT):', 28, 102);
+  ctx.fillText('PV DC INPUT (DUAL MPPT FOR 400Wp+):', 28, 102);
   ctx.font = '13px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText('Max Voc: 600Vdc | MPPT: 100 - 550Vdc | Imax: 2x 15.0A', 28, 122);
+  ctx.fillText('Max Voc: 550Vdc | MPPT: 120 - 500Vdc | Imax: 2x 14.0A', 28, 122);
 
-  // AC Output Ratings
+  // AC Output Ratings (PLN 220V Grid & EPS Backup)
   ctx.font = 'bold 14px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#0f172a';
-  ctx.fillText('AC GRID OUTPUT:', 28, 150);
+  ctx.fillText('AC OUTPUT (PLN GRID & BACKUP EPS):', 28, 150);
   ctx.font = '13px "JetBrains Mono", monospace, sans-serif';
   ctx.fillStyle = '#1e293b';
-  ctx.fillText('Vac: 240V Split-Phase | 60Hz | Pn: 5000VA | In: 20.8A', 28, 170);
+  ctx.fillText('PLN: 220V Single-Phase | 50Hz | 5000VA | EPS: <10ms UPS Backup', 28, 170);
 
   // Standards & Compliance
   ctx.font = 'bold 12.5px sans-serif';
   ctx.fillStyle = '#047857';
-  ctx.fillText('CEC WEIGHTED EFFICIENCY: 98.4% • TYPE 4X OUTDOOR RATED', 28, 204);
+  ctx.fillText('CEC EFFICIENCY: 98.4% • IP65 OUTDOOR • ZERO-EXPORT READY', 28, 204);
   ctx.font = '12px sans-serif';
   ctx.fillStyle = '#475569';
-  ctx.fillText('UL 1741-SB / IEEE 1547-2018 • NEC 690.12 Rapid Shutdown Certified', 28, 224);
+  ctx.fillText('SNI / IEC 62109-1/2 • IEC 62116 Anti-Islanding • Permen ESDM Compliant', 28, 224);
 
   // QR Code Graphic
   ctx.fillStyle = '#0f172a';
@@ -766,11 +766,11 @@ export function createBatterySpecPlateTexture() {
   // Header Title
   ctx.fillStyle = '#38bdf8';
   ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
-  ctx.fillText('ENERGYPACK 10.5kWh BESS', 28, 44);
+  ctx.fillText('ENERGYPACK 10.5kWh BESS (LiFePO4)', 28, 44);
 
   ctx.font = '13px sans-serif';
   ctx.fillStyle = '#94a3b8';
-  ctx.fillText('Lithium Iron Phosphate (LiFePO4) Home Energy Storage Unit', 28, 66);
+  ctx.fillText('Lithium Iron Phosphate Storage for PLN Peak Tariff Shaving & Backup', 28, 66);
 
   ctx.strokeStyle = '#334155';
   ctx.lineWidth = 1.5;
@@ -795,7 +795,7 @@ export function createBatterySpecPlateTexture() {
   ctx.fillText('ROUND-TRIP EFFICIENCY: 90.5% • NEMA TYPE 3R OUTDOOR', 28, 202);
   ctx.font = '12px sans-serif';
   ctx.fillStyle = '#64748b';
-  ctx.fillText('UL 9540 / UL 1973 / UN 38.3 / NFPA 855 Fire Safety Compliant', 28, 224);
+  ctx.fillText('SNI / IEC 62619 / UN 38.3 • PLN R-1/TR Tariff Shaving & EPS UPS Backup', 28, 224);
 
   // QR Code Graphic
   ctx.fillStyle = '#f8fafc';

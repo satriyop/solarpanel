@@ -61,11 +61,11 @@ export class AnimationController {
       case 'frame': return 'Anodized 6063-T5 Extruded Aluminum';
       case 'glass': return '3.2mm High-Transmission Anti-Reflective';
       case 'topEva': return 'Ethylene Vinyl Acetate Copolymer Sheet';
-      case 'cells': return 'Monocrystalline Silicon • 5 Silver Busbars';
+      case 'cells': return 'Tier-1 410Wp+ Monocrystalline • MBB Busbars';
       case 'bottomEva': return 'Moisture-Resistant Cushioning Film';
-      case 'backsheet': return 'Tedlar / PET Weatherproof Barrier';
+      case 'backsheet': return 'Tedlar / PET Weatherproof Barrier (SNI)';
       case 'jbox': return 'IP68 Weatherproof Box with MC4 Leads';
-      case 'inverter': return 'Enphase-Style 240V AC MLPE Inverter';
+      case 'inverter': return 'Enphase-Style 220V 50Hz MLPE Inverter (PLN)';
       default: return '';
     }
   }
@@ -380,9 +380,9 @@ export class AnimationController {
         detail: 'Thickness: 0.45mm • Embossed diamond waffle pattern for bubble-free vacuum evacuation • 85% gel content'
       },
       cells: {
-        title: '4. Silicon Solar Cells & Busbars',
-        mat: 'Monocrystalline Silicon (M6 166mm Wafer)',
-        detail: '60-cell matrix • 5 Multi-Busbars (MBB) • Fine screen-printed fingers • 21.4% cell efficiency • Micro-pyramid texture'
+        title: '4. Silicon Solar Cells & Multi-Busbars (410Wp+)',
+        mat: 'Tier-1 Monocrystalline Silicon (182mm Half-Cut Wafer)',
+        detail: '108/120 half-cut matrix • Multi-Busbar (MBB 10-12BB) • 21.4% cell efficiency • Engineered for Indonesian tropical irradiance (4.8 kWh/m²/day) & low temperature coefficient'
       },
       bottomEva: {
         title: '5. Bottom EVA Encapsulant Film',
@@ -392,7 +392,7 @@ export class AnimationController {
       backsheet: {
         title: '6. Tedlar Composite Backsheet',
         mat: 'TPT (Tedlar PVF / PET / Primer Multi-layer)',
-        detail: '1500V DC breakdown rating • 4 precision CNC ribbon slits • Metalized technical specifications & UL rating plate'
+        detail: '1500V DC breakdown rating • SNI 04-3850.2 / IEC 61215 / IEC 61730 certified • 410Wp STC laser specification rating plate'
       },
       jbox: {
         title: '7. Junction Box & MC4 Leads',
@@ -400,19 +400,19 @@ export class AnimationController {
         detail: '3x Schottky bypass diodes • Heat-dissipating cooling fins • 4mm² UV-resistant double-insulated cables with MC4 plugs'
       },
       inverter: {
-        title: '8. Microinverter & AC Trunk (MLPE)',
-        mat: 'Die-Cast Aluminum Enclosure (NEMA 4X / IP67)',
-        detail: 'Integrated MPPT • 240V Split-Phase AC Output • 97.5% CEC Efficiency • Rapid Shutdown Compliant (NEC 690.12) • Heavy-duty AC trunk line'
+        title: '8. Microinverter & AC Trunk (MLPE 220V)',
+        mat: 'Die-Cast Aluminum Enclosure (IP67 / NEMA 4X)',
+        detail: 'Integrated MPPT • 220V Single-Phase 50Hz AC Output (PLN Grid Profile) • 97.5% Efficiency • SNI / IEC 62116 Anti-Islanding Protection • Heavy-duty AC trunk line'
       },
       centralInverter: {
-        title: 'Central Hybrid String Inverter',
-        mat: 'Powder-Coated Die-Cast Aluminum (NEMA 4X / IP66)',
-        detail: '5.0kW Grid-Tied Output • Dual MPPT Trackers • 98.4% CEC Efficiency • Integrated Rotary DC Disconnect (NEC 690.12) • High-Voltage Battery Storage Port'
+        title: 'Central Hybrid Inverter 5.0kW (PLN Grid)',
+        mat: 'Powder-Coated Die-Cast Aluminum (IP65 Outdoor)',
+        detail: '5.0kW 220V/50Hz Single-Phase Output • Dual MPPT for 400Wp+ strings • <10ms EPS Backup Transfer (Blackout UPS) • Permen ESDM Zero-Export Ready'
       },
       batteryStorage: {
-        title: 'Home Battery Energy Storage System (BESS)',
+        title: 'Home Battery Energy Storage System (10.5kWh BESS)',
         mat: 'Lithium Iron Phosphate (LiFePO4) Cells in NEMA 3R Enclosure',
-        detail: '10.5kWh Usable Capacity • 5.0kW Continuous Output • Integrated BMS with Active Balancing • High-Voltage DC Contactor • UL 9540 Certified'
+        detail: '10.5kWh Usable Storage • 5.0kW Continuous Output • Peak Shaving for PLN R-1/TR Tariff • Household Backup during PLN Blackout (Mati Lampu) • SNI / IEC 62619 Certified'
       }
     };
 
