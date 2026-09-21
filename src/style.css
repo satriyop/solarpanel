@@ -632,6 +632,29 @@ body {
   color: #64748b;
 }
 
+.module-spec-strip {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  font-size: 9.5px;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #475569;
+}
+
+.studio-dark .module-spec-strip {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.module-spec-item {
+  display: inline-block;
+}
+
 .studio-dark .sun-simulator-card {
   background: rgba(24, 27, 32, 0.85);
   border-color: rgba(255, 255, 255, 0.12);

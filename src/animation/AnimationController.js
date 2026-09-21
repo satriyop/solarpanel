@@ -58,14 +58,16 @@ export class AnimationController {
 
   getLayerSubtitle(id) {
     switch (id) {
-      case 'frame': return 'Anodized 6063-T5 Extruded Aluminum';
-      case 'glass': return '3.2mm High-Transmission Anti-Reflective';
-      case 'topEva': return 'Ethylene Vinyl Acetate Copolymer Sheet';
-      case 'cells': return 'Tier-1 410Wp+ Monocrystalline • MBB Busbars';
-      case 'bottomEva': return 'Moisture-Resistant Cushioning Film';
-      case 'backsheet': return 'Tedlar / PET Weatherproof Barrier (SNI)';
-      case 'jbox': return 'IP68 Weatherproof Box with MC4 Leads';
-      case 'inverter': return 'Enphase-Style 220V 50Hz MLPE Inverter (PLN)';
+      case 'frame': return 'Anodized 6063-T5 Extruded Aluminum (35mm Profile)';
+      case 'glass': return '3.2mm Low-Iron Tempered Glass (94.5% Transmittance)';
+      case 'topEva': return 'Ethylene Vinyl Acetate Encapsulant (0.45mm Film)';
+      case 'cells': return 'Tier-1 415Wp Monocrystalline (108 Half-Cut M10 MBB)';
+      case 'bottomEva': return 'Moisture-Resistant Cushioning Polymer Film';
+      case 'backsheet': return 'Tedlar / PET Weatherproof Composite Barrier (1500V DC)';
+      case 'jbox': return 'IP68 Weatherproof Box with Bypass Diodes & MC4 Leads';
+      case 'inverter': return (this.inverterMode === 'central')
+        ? '5.0kW 220V/50Hz Hybrid Inverter (Dual MPPT & PLN Grid)'
+        : 'Enphase-Style 220V 50Hz MLPE Inverter (PLN Grid Profile)';
       default: return '';
     }
   }
@@ -205,6 +207,34 @@ export class AnimationController {
     });
   }
 
+  setInverterMode(mode) {
+    this.inverterMode = mode;
+    const isCentral = (mode === 'central');
+
+    // Update 8th layer annotation label if it exists
+    const invLabelItem = this.labelElements.find(item => item.id === 'inverter');
+    if (invLabelItem) {
+      const titleEl = invLabelItem.domElement.querySelector('.annotation-title');
+      const descEl = invLabelItem.domElement.querySelector('.annotation-desc');
+      const stepEl = invLabelItem.domElement.querySelector('.annotation-step');
+
+      if (isCentral && this.centralInverter) {
+        invLabelItem.object = this.centralInverter.group;
+        invLabelItem.anchorOffset = new THREE.Vector3(0.35, 0.20, 0);
+        if (titleEl) titleEl.textContent = 'Central Hybrid Inverter (5kW)';
+        if (descEl) descEl.textContent = '5.0kW 220V/50Hz Hybrid Inverter (Dual MPPT & PLN Grid)';
+        if (stepEl) stepEl.textContent = '8';
+      } else {
+        const invLayer = this.model.layers.find(l => l.id === 'inverter');
+        if (invLayer) invLabelItem.object = invLayer.object;
+        invLabelItem.anchorOffset = new THREE.Vector3(0.65, 0, 0);
+        if (titleEl) titleEl.textContent = 'Microinverter & AC Trunk (MLPE)';
+        if (descEl) descEl.textContent = 'Enphase-Style 220V 50Hz MLPE Inverter (PLN Grid Profile)';
+        if (stepEl) stepEl.textContent = '8';
+      }
+    }
+  }
+
   updateLabels() {
     const widthHalf = this.scene.width / 2;
     const heightHalf = this.scene.height / 2;
@@ -214,10 +244,18 @@ export class AnimationController {
     const labelOpacity = Math.max(0, (this.explodeProgress - 0.15) / 0.85);
 
     this.labelElements.forEach((item) => {
+      // If in central inverter mode and central inverter is not visible, hide inverter label
+      if (item.id === 'inverter' && this.inverterMode === 'central' && (!this.centralInverter || !this.centralInverter.isVisible)) {
+        item.domElement.style.opacity = '0';
+        item.domElement.style.pointerEvents = 'none';
+        return;
+      }
+
       // World position of layer
       item.object.getWorldPosition(tempV);
       // Offset to outer edge of layer for clean leader lines
-      tempV.x += 0.65;
+      const offset = item.anchorOffset || new THREE.Vector3(0.65, 0, 0);
+      tempV.add(offset);
 
       // Check if behind camera
       tempV.project(this.scene.camera);
@@ -366,48 +404,53 @@ export class AnimationController {
     this.layerSpecs = {
       frame: {
         title: '1. Extruded Aluminum Frame',
-        mat: 'Anodized 6063-T5 Aerospace Alloy',
-        detail: '35mm profile • 45° miter joints • CNC rainwater drainage weep slots • 2400Pa wind / 5400Pa snow load rating'
+        mat: 'Anodized 6063-T5 Aerospace Grade Alloy',
+        detail: '35mm profile • 1722 × 1134 mm • 45° corner miters • CNC rainwater drainage weep slots • 2400Pa wind / 5400Pa snow load rating'
       },
       glass: {
-        title: '2. Tempered Solar Glass',
-        mat: '3.2mm Low-Iron High-Transmission Glass',
-        detail: '94.5% Solar Transmittance • Anti-Reflective (AR) SiO2 Coating • Emerald-cyan polished safety bevels • Hail Class 4'
+        title: '2. Tempered Solar Glass Sheet',
+        mat: '3.2mm Low-Iron Ultra-Clear Tempered Glass',
+        detail: '94.5% solar transmittance • Anti-Reflective (AR) SiO2 thin-film coating • Emerald-cyan safety bevels • Hail Class 4 resistance'
       },
       topEva: {
         title: '3. Top EVA Encapsulant Film',
-        mat: 'Ethylene Vinyl Acetate Copolymer Sheet',
-        detail: 'Thickness: 0.45mm • Embossed diamond waffle pattern for bubble-free vacuum evacuation • 85% gel content'
+        mat: 'Ethylene Vinyl Acetate Copolymer Sheet (0.45mm)',
+        detail: 'Embossed diamond micro-pyramid texture for bubble-free vacuum lamination • >85% cross-linking gel content • High UV cut-off'
       },
       cells: {
-        title: '4. Silicon Solar Cells & Multi-Busbars (410Wp+)',
-        mat: 'Tier-1 Monocrystalline Silicon (182mm Half-Cut Wafer)',
-        detail: '108/120 half-cut matrix • Multi-Busbar (MBB 10-12BB) • 21.4% cell efficiency • Engineered for Indonesian tropical irradiance (4.8 kWh/m²/day) & low temperature coefficient'
+        title: '4. Silicon Solar Cells & Busbars (415Wp)',
+        mat: 'Tier-1 Monocrystalline Silicon (182mm M10 Half-Cut Wafers)',
+        detail: '108 half-cut matrix • Multi-Busbar (MBB 10-12BB) • 21.3% module efficiency (1.95m² area) • Voc 37.8V, Isc 13.85A, Vmp 31.6V, Imp 13.13A • NMOT 45°C • Low temp coefficient -0.34%/°C'
       },
       bottomEva: {
         title: '5. Bottom EVA Encapsulant Film',
-        mat: 'Rear Cushioning Polymer Film',
-        detail: 'High dielectric isolation • Moisture barrier • High PID & UV resistance • Bonds cells firmly to backsheet'
+        mat: 'Rear Cushioning Polymer Adhesive Film (0.45mm)',
+        detail: 'High dielectric breakdown strength (>30kV/mm) • Moisture barrier • PID-resistant • Permanently bonds cell matrix to backsheet'
       },
       backsheet: {
         title: '6. Tedlar Composite Backsheet',
-        mat: 'TPT (Tedlar PVF / PET / Primer Multi-layer)',
-        detail: '1500V DC breakdown rating • SNI 04-3850.2 / IEC 61215 / IEC 61730 certified • 410Wp STC laser specification rating plate'
+        mat: 'TPT (Tedlar PVF / PET / Primer Multi-layer Barrier)',
+        detail: '1500V DC breakdown rating • SNI 04-3850.2 / IEC 61215 / IEC 61730 certified • 415Wp STC laser specification rating plate'
       },
       jbox: {
-        title: '7. Junction Box & MC4 Leads',
-        mat: 'Flame-Retardant Polycarbonate (IP68)',
-        detail: '3x Schottky bypass diodes • Heat-dissipating cooling fins • 4mm² UV-resistant double-insulated cables with MC4 plugs'
+        title: '7. Junction Box & MC4 Solar Leads',
+        mat: 'Flame-Retardant Polycarbonate Enclosure (IP68 Weatherproof)',
+        detail: '3x Schottky bypass diodes (15A) • Heat-dissipating convective cooling fins • 4mm² UV-resistant double-insulated solar cables with MC4 connectors'
       },
       inverter: {
         title: '8. Microinverter & AC Trunk (MLPE 220V)',
-        mat: 'Die-Cast Aluminum Enclosure (IP67 / NEMA 4X)',
-        detail: 'Integrated MPPT • 220V Single-Phase 50Hz AC Output (PLN Grid Profile) • 97.5% Efficiency • SNI / IEC 62116 Anti-Islanding Protection • Heavy-duty AC trunk line'
+        mat: 'Die-Cast Natural Aluminum Enclosure (IP67 / NEMA 4X)',
+        detail: 'Integrated MPPT per panel • 220V Single-Phase 50Hz AC Output (PLN Grid Profile) • 97.5% CEC Efficiency • SNI / IEC 62116 Anti-Islanding Protection • Heavy-duty AC trunk line'
       },
       centralInverter: {
-        title: 'Central Hybrid Inverter 5.0kW (PLN Grid)',
-        mat: 'Powder-Coated Die-Cast Aluminum (IP65 Outdoor)',
-        detail: '5.0kW 220V/50Hz Single-Phase Output • Dual MPPT for 400Wp+ strings • <10ms EPS Backup Transfer (Blackout UPS) • Permen ESDM Zero-Export Ready'
+        title: 'Central Hybrid Inverter 5.0kW (PLN Grid-Tied)',
+        mat: 'Powder-Coated Die-Cast Aluminum (IP65 Outdoor NEMA 4X)',
+        detail: '5.0kW 220V/50Hz Single-Phase Output • Dual MPPT for 415Wp+ strings • <10ms EPS Backup Transfer (Blackout UPS) • Permen ESDM Zero-Export Ready'
+      },
+      soladeck: {
+        title: 'Rooftop Transition Box (Soladeck NEMA 3R)',
+        mat: 'Galvanized Steel Enclosure with Integrated Roof Flashing',
+        detail: 'NEMA 3R weatherproof transition box on roof • Receives module MC4 DC leads and transitions them into metallic EMT conduit to central inverter'
       },
       batteryStorage: {
         title: 'Home Battery Energy Storage System (10.5kWh BESS)',
@@ -504,9 +547,14 @@ export class AnimationController {
     // Also collect Central Inverter meshes if active
     if (this.centralInverter && this.centralInverter.isVisible) {
       this.centralInverter.group.traverse(child => {
-        if (child.isMesh && child.material.visible !== false && child.userData.isCentralInverter) {
-          child.userData.parentLayerId = 'centralInverter';
-          meshes.push(child);
+        if (child.isMesh && child.material.visible !== false) {
+          if (child.userData.isSoladeck) {
+            child.userData.parentLayerId = 'soladeck';
+            meshes.push(child);
+          } else if (child.userData.isCentralInverter) {
+            child.userData.parentLayerId = 'centralInverter';
+            meshes.push(child);
+          }
         }
       });
     }

@@ -64,7 +64,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isBatteryActive = false;
   let currentInverterMode = 'micro'; // 'micro' (rooftop MLPE) or 'central' (wall-mounted string)
   let isUndersideView = false;
-  let currentWatts = 410;
+  let currentWatts = 415;
 
   let currentSunAngle = 0;
 
@@ -84,18 +84,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const gTotal = Math.min(1000, gDirect + gDiffuse);
     const relG = Math.max(0.045, gTotal / 1000);
 
-    // Shockley Diode equation: 410Wp+ Half-Cut module (Vmp ~31.6V, Imp ~13.0A at STC)
+    // Shockley Diode equation: Tier-1 415Wp Half-Cut module (Vmp ~31.6V, Imp ~13.13A at STC)
     const vmp = (31.6 * (1.0 + 0.038 * Math.log(relG))).toFixed(1);
     // Operating current scales linearly with tropical photon flux
-    const imp = (13.0 * relG).toFixed(1);
-    // Real electrical power in Watts
-    const watts = Math.min(410, Math.round(parseFloat(vmp) * parseFloat(imp)));
+    const imp = (13.13 * relG).toFixed(1);
+    // Real electrical power in Watts (415Wp max at STC)
+    const watts = Math.min(415, Math.round(parseFloat(vmp) * parseFloat(imp)));
     currentWatts = watts;
-    const pct = Math.round((watts / 410) * 100);
+    const pct = Math.round((watts / 415) * 100);
 
     sunWattsVal.textContent = watts;
     sunImpVal.textContent = `Imp: ${imp}A`;
     if (sunVmpVal) sunVmpVal.textContent = `Vmp: ${vmp}V`;
+    if (sunEffVal) sunEffVal.textContent = `Eff: 21.3%`;
     if (sunIamVal) sunIamVal.textContent = `IAM: ${Math.round(iam * 100)}%`;
     if (mlpeAcWatts) mlpeAcWatts.textContent = `${Math.round(watts * 0.975)}W AC`;
     powerGaugeFill.style.width = `${pct}%`;
@@ -255,7 +256,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // 2. Reconfigure electrical particle routing
     powerFlow.setInverterMode(mode);
 
-    // 3. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
+    // 3. Update 3D annotation labels on screen
+    anim.setInverterMode(mode);
+
+    // 4. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
     centralInverter.setVisible(isCentral);
 
     // 4. Update HUD switcher button
@@ -379,6 +383,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const sunAngleLabel = document.getElementById('sun-angle-label');
   const sunImpVal = document.getElementById('sun-imp-val');
   const sunVmpVal = document.getElementById('sun-vmp-val');
+  const sunEffVal = document.getElementById('sun-eff-val');
   const sunIamVal = document.getElementById('sun-iam-val');
 
   if (sliderSunAngle) {

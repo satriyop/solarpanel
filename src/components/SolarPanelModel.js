@@ -18,11 +18,11 @@ export class SolarPanelModel {
     this.group = new THREE.Group();
     this.layers = [];
 
-    // Panel overall dimensions (Standard 60-cell residential module: ~1.05m x ~1.75m)
-    this.panelWidth = 1.08;
-    this.panelLength = 1.78;
-    this.frameThickness = 0.04;
-    this.frameWidth = 0.035;
+    // Panel overall dimensions (Tier-1 108-Cell M10 Residential Module: 1722mm x 1134mm x 35mm)
+    this.panelWidth = 1.134;
+    this.panelLength = 1.722;
+    this.frameThickness = 0.035;
+    this.frameWidth = 0.030;
 
     // Separation configuration along vertical Y-axis
     // Start Frame: Assembled (close contact)
@@ -207,7 +207,7 @@ export class SolarPanelModel {
     // Rear Mounting Oval Slots (Standard 9x14mm slots on bottom flange)
     const slotGeo = new THREE.CylinderGeometry(0.0045, 0.0045, fh * 1.1, 16);
     const slotMat = new THREE.MeshBasicMaterial({ color: 0x181a1f });
-    [-0.45, -0.2, 0.2, 0.45].forEach((zOff) => {
+    [-0.43, -0.20, 0.20, 0.43].forEach((zOff) => {
       [-W / 2 + fw / 2, W / 2 - fw / 2].forEach((xOff) => {
         const slot = new THREE.Mesh(slotGeo, slotMat);
         slot.position.set(xOff, 0, zOff);
@@ -361,10 +361,10 @@ export class SolarPanelModel {
 
     const cols = 6;
     const rows = 10;
-    const cellWidth = 0.16;
-    const cellLength = 0.16;
-    const gapX = 0.005;
-    const gapZ = 0.005;
+    const cellWidth = 0.174;
+    const cellLength = 0.158;
+    const gapX = 0.004;
+    const gapZ = 0.004;
 
     const totalW = cols * cellWidth + (cols - 1) * gapX;
     const totalL = rows * cellLength + (rows - 1) * gapZ;
@@ -410,7 +410,7 @@ export class SolarPanelModel {
         group.add(cell);
 
         // Interconnect silver busbar ribbons (5 busbars per cell)
-        const busbarOffsets = [-0.06, -0.03, 0.0, 0.03, 0.06];
+        const busbarOffsets = [-0.066, -0.033, 0.0, 0.033, 0.066];
         busbarOffsets.forEach((bOff) => {
           const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
           ribbon.position.set(x + bOff, 0.0004, z);
@@ -573,7 +573,7 @@ export class SolarPanelModel {
     this.jboxCentralCables = new THREE.Group();
     this.jboxCentralCables.visible = false;
     jboxGroup.add(this.jboxMicroCables);
-    jboxGroup.add(this.jboxCentralCables);
+    this.group.add(this.jboxCentralCables); // Add to panel group so cables don't move rigidly with jboxGroup
 
     const cableMat = new THREE.MeshStandardMaterial({
       color: 0x181a1e,
@@ -630,21 +630,23 @@ export class SolarPanelModel {
     createMicroCable(-0.045, true);  // Positive (+)
     createMicroCable(0.045, false);  // Negative (-)
 
-    // 2. Cables routing to Rooftop Transition Box (Soladeck) at module edge (X = +0.50m)
+    // 2. Cables routing to Rooftop Transition Box (Soladeck) at module edge (X = +0.535m)
+    // Dynamic Spline: Continuously bridges between moving JBox and fixed Soladeck box
+    this.centralCableMeshes = [];
     const createCentralCable = (startX, isPositive) => {
       const zOffset = isPositive ? -0.012 : 0.012;
       const curve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX, -boxH / 2, -0.45 + boxL / 2 + 0.02),
-        new THREE.Vector3(startX + 0.10, -boxH * 1.3, -0.45 + boxL / 2 + 0.06 + zOffset),
-        new THREE.Vector3(0.24, -boxH * 1.6, -0.45 + boxL / 2 + 0.08 + zOffset),
-        new THREE.Vector3(0.38, -boxH * 1.4, -0.45 + boxL / 2 + 0.07 + zOffset),
-        new THREE.Vector3(0.50, -boxH * 1.1, -0.45 + boxL / 2 + 0.07 + zOffset)
+        new THREE.Vector3(startX, -0.054, -0.368),
+        new THREE.Vector3(startX + 0.08, -0.075, -0.34 + zOffset),
+        new THREE.Vector3(0.24, -0.065, -0.32 + zOffset),
+        new THREE.Vector3(0.40, -0.045, -0.31 + zOffset),
+        new THREE.Vector3(0.535, -0.038, -0.31 + zOffset)
       ]);
 
-      const tubeGeo = new THREE.TubeGeometry(curve, 36, 0.0055, 12, false);
-      const cable = new THREE.Mesh(tubeGeo, cableMat);
-      cable.castShadow = true;
-      this.jboxCentralCables.add(cable);
+      const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.0055, 12, false);
+      const tubeMesh = new THREE.Mesh(tubeGeo, cableMat);
+      tubeMesh.castShadow = true;
+      this.jboxCentralCables.add(tubeMesh);
 
       const bandMat = new THREE.MeshStandardMaterial({
         color: isPositive ? 0xd92626 : 0x2563eb,
@@ -652,22 +654,32 @@ export class SolarPanelModel {
         metalness: 0.1
       });
       const bandGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.018, 16);
-      const band = new THREE.Mesh(bandGeo, bandMat);
-      band.position.copy(curve.getPointAt(0.35));
-      band.rotation.z = Math.PI / 2;
-      this.jboxCentralCables.add(band);
+      const bandMesh = new THREE.Mesh(bandGeo, bandMat);
+      bandMesh.position.copy(curve.getPointAt(0.30));
+      bandMesh.rotation.z = Math.PI / 2;
+      this.jboxCentralCables.add(bandMesh);
 
       const mc4EndPos = curve.getPointAt(1.0);
       const mc4Geo = new THREE.CylinderGeometry(0.009, 0.009, 0.048, 16);
-      const mc4 = new THREE.Mesh(mc4Geo, mc4Mat);
-      mc4.position.copy(mc4EndPos);
-      mc4.rotation.z = Math.PI / 2;
-      mc4.castShadow = true;
-      this.jboxCentralCables.add(mc4);
+      const mc4Mesh = new THREE.Mesh(mc4Geo, mc4Mat);
+      mc4Mesh.position.copy(mc4EndPos);
+      mc4Mesh.rotation.z = Math.PI / 2;
+      mc4Mesh.castShadow = true;
+      this.jboxCentralCables.add(mc4Mesh);
+
+      this.centralCableMeshes.push({
+        startX,
+        isPositive,
+        tubeMesh,
+        bandMesh,
+        mc4Mesh
+      });
     };
 
     createCentralCable(-0.045, true);  // Positive (+)
     createCentralCable(0.045, false);  // Negative (-)
+
+    this.updateCentralCables(-0.038);
 
     return jboxGroup;
   }
@@ -914,6 +926,68 @@ export class SolarPanelModel {
       layer.object.position.y = targetY;
       layer.currentY = targetY;
     });
+
+    // Dynamically update central inverter cables so they remain connected to the Soladeck box at all separation heights
+    const jboxLayer = this.layers.find(l => l.id === 'jbox');
+    if (jboxLayer) {
+      this.updateCentralCables(jboxLayer.currentY);
+    }
+  }
+
+  /**
+   * Dynamically recomputes the Catmull-Rom spline bridging from the moving J-Box
+   * to the stationary Soladeck roof transition box.
+   */
+  updateCentralCables(jboxY = -0.038) {
+    if (!this.centralCableMeshes || this.centralCableMeshes.length === 0) return;
+
+    this.centralCurves = [];
+
+    this.centralCableMeshes.forEach((item, idx) => {
+      const { startX, isPositive, tubeMesh, bandMesh, mc4Mesh } = item;
+      const zOffset = isPositive ? -0.012 : 0.012;
+
+      // P0: Exit of JBox gland (moves with JBox during breakdown)
+      const p0 = new THREE.Vector3(startX, jboxY - 0.016, -0.368);
+      // P1: Service drip loop just below JBox (moves with JBox during breakdown)
+      const p1 = new THREE.Vector3(startX + 0.08, jboxY - 0.04, -0.34 + zOffset);
+      // P2: Ascending mid-cable span bridging between jboxY and roof plane (-0.038)
+      const p2 = new THREE.Vector3(0.24, THREE.MathUtils.lerp(jboxY - 0.02, -0.055, 0.45), -0.32 + zOffset);
+      // P3: Approaching Soladeck level near module right edge
+      const p3 = new THREE.Vector3(0.40, THREE.MathUtils.lerp(jboxY - 0.01, -0.042, 0.85), -0.31 + zOffset);
+      // P4: Entering Soladeck input MC4 port at roof plane (STATIONARY!)
+      const p4 = new THREE.Vector3(0.535, -0.038, -0.31 + zOffset);
+
+      const curve = new THREE.CatmullRomCurve3([p0, p1, p2, p3, p4]);
+      this.centralCurves[idx] = curve;
+
+      // Update tube geometry smoothly
+      if (tubeMesh) {
+        tubeMesh.geometry.dispose();
+        tubeMesh.geometry = new THREE.TubeGeometry(curve, 32, 0.0055, 12, false);
+      }
+
+      // Update band position
+      if (bandMesh) {
+        bandMesh.position.copy(curve.getPointAt(0.30));
+      }
+
+      // MC4 connector stays at curve end P4 (Soladeck input receptacle)
+      if (mc4Mesh) {
+        mc4Mesh.position.copy(p4);
+      }
+    });
+  }
+
+  /**
+   * Samples a point along the dynamic central inverter cable for particle tracking
+   */
+  getCentralCablePoint(t, isPositive) {
+    const idx = isPositive ? 0 : 1;
+    if (this.centralCurves && this.centralCurves[idx]) {
+      return this.centralCurves[idx].getPoint(t);
+    }
+    return new THREE.Vector3(0.535 * t, -0.038, -0.31);
   }
 
   /**
@@ -969,6 +1043,10 @@ export class SolarPanelModel {
     }
     if (this.jboxCentralCables) {
       this.jboxCentralCables.visible = !isMicro;
+      if (!isMicro) {
+        const jboxLayer = this.layers.find(l => l.id === 'jbox');
+        this.updateCentralCables(jboxLayer ? jboxLayer.currentY : -0.038);
+      }
     }
   }
 }

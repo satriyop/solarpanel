@@ -257,13 +257,13 @@ export class PowerFlowController {
   /**
    * Update particle positions along dynamic 3D paths tracking current layer separation heights
    */
-  update(delta, currentWatts = 410) {
+  update(delta, currentWatts = 415) {
     if (!this.isVisible) return;
 
     this.time += delta;
 
     // Power factor scales particle speed and brightness (dimmer at sunset / 0W)
-    const powerFactor = Math.max(0.12, Math.min(1.0, currentWatts / 410));
+    const powerFactor = Math.max(0.12, Math.min(1.0, currentWatts / 415));
 
     // Dynamic layer heights from model
     const cellsLayer = this.model.layers.find(l => l.id === 'cells');
@@ -328,15 +328,12 @@ export class PowerFlowController {
 
     // 3. ARCHITECTURE B: Central String Inverter Mode
     if (this.inverterMode === 'central' && this.centralInverter && this.centralInverter.isVisible) {
-      // A. Animate J-Box to Soladeck DC Particles
+      // A. Animate J-Box to Soladeck DC Particles (smoothly follows dynamic spline between JBox & Soladeck)
       if (this.centralJboxParticles) {
         this.centralJboxParticles.forEach((p) => {
           p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
-          const t = p.t;
-          const x = p.startX + t * (0.50 - p.startX);
-          const y = jboxY - 0.016 - 0.015 * Math.sin(t * Math.PI);
-          const z = -0.36 - 0.02 * t;
-          p.sprite.position.set(x, y, z);
+          const pt = this.model.getCentralCablePoint(p.t, p.isPos);
+          p.sprite.position.copy(pt);
           p.sprite.material.opacity = 0.75 * powerFactor;
         });
       }

@@ -295,8 +295,8 @@ export class CentralInverterModel {
    */
   initRooftopTransitionBox(bracketMat, darkMat, brassMat) {
     this.soladeckGroup = new THREE.Group();
-    // Positioned right at the 22° tilted module right edge in local inverter space
-    this.soladeckGroup.position.set(-1.41, -0.095, -0.167);
+    // Positioned right at the 22° tilted module right edge in local inverter space (X = +0.607m in world)
+    this.soladeckGroup.position.set(-1.343, -0.095, -0.167);
     this.soladeckGroup.rotation.x = 22 * (Math.PI / 180);
 
     // 1. Galvanized Roof Flashing Plate (tucks under roof shingles)
@@ -311,6 +311,7 @@ export class CentralInverterModel {
     flashing.position.set(0, -0.002, 0);
     flashing.receiveShadow = true;
     flashing.userData.isCentralInverter = true;
+    flashing.userData.isSoladeck = true;
     this.soladeckGroup.add(flashing);
 
     // 2. Weatherproof Sloped NEMA 3R Metal Box
@@ -325,6 +326,7 @@ export class CentralInverterModel {
     box.position.set(0, 0.026, 0);
     box.castShadow = true;
     box.userData.isCentralInverter = true;
+    box.userData.isSoladeck = true;
     this.soladeckGroup.add(box);
 
     // Weatherproof Lid Seam & Fasteners
@@ -396,8 +398,8 @@ export class CentralInverterModel {
     // Point 3: Horizontal run secured by unistrut straps
     // Point 4: Sweep into Central Inverter left MPPT gland
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.338, -0.095, -0.167),
-      new THREE.Vector3(-1.08, -0.16, -0.12),
+      new THREE.Vector3(-1.271, -0.095, -0.167),
+      new THREE.Vector3(-1.02, -0.16, -0.12),
       new THREE.Vector3(-0.65, -0.26, 0.01),
       new THREE.Vector3(-0.30, -0.38, 0.01),
       new THREE.Vector3(-0.14, -0.38, 0.01),

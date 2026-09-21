@@ -317,11 +317,11 @@ export class StudioScene {
     this.incomingBeamsGroup = new THREE.Group();
     this.incomingRays = [];
 
-    // 3x3 grid of target points across the rectangular solar panel aperture
+    // 3x3 grid of target points across the rectangular solar panel aperture (1.134m x 1.722m)
     this.apertureOffsets = [
-      [-0.45, -0.75], [0.0, -0.75], [0.45, -0.75],
-      [-0.45,  0.00], [0.0,  0.00], [0.45,  0.00],
-      [-0.45,  0.75], [0.0,  0.75], [0.45,  0.75]
+      [-0.50, -0.78], [0.0, -0.78], [0.50, -0.78],
+      [-0.50,  0.00], [0.0,  0.00], [0.50,  0.00],
+      [-0.50,  0.78], [0.0,  0.78], [0.50,  0.78]
     ];
 
     const rayMat = new THREE.LineDashedMaterial({
@@ -450,9 +450,9 @@ export class StudioScene {
         // Source: Originates directly inside the glowing 3D Sun Orb!
         // Distributed proportionally across the sun's radiant core (radius ~0.08m)
         const source = new THREE.Vector3(
-          sunPos.x + (ox / 0.45) * 0.08,
+          sunPos.x + (ox / 0.50) * 0.08,
           sunPos.y,
-          sunPos.z + (oz / 0.75) * 0.08
+          sunPos.z + (oz / 0.78) * 0.08
         );
 
         const posArr = line.geometry.attributes.position.array;
@@ -491,9 +491,9 @@ export class StudioScene {
       posArr[10] = sunPos.y;
       posArr[11] = sunPos.z + sunR;
 
-      // Bottom quad at the 4 corners of the 22° tilted solar panel aperture
-      const hw = 0.52;
-      const hl = 0.88;
+      // Bottom quad at the 4 corners of the 22° tilted solar panel aperture (1.134m x 1.722m)
+      const hw = 0.55;
+      const hl = 0.84;
 
       // 4: Top-Left (-hw, -hl)
       posArr[12] = -hw;

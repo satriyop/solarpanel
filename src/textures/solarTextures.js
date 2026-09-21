@@ -253,18 +253,18 @@ export function createBacksheetTexture() {
   ctx.fillRect(labelX, labelY, labelW, 46);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('TIER-1 MONO PERC 410Wp+ (PLTS ATAP)', labelX + 20, labelY + 31);
+  ctx.fillText('TIER-1 MONOCRYSTALLINE 415Wp (PLTS ATAP)', labelX + 20, labelY + 31);
 
-  // Electrical specs (Indonesian 410Wp+ STC Reference)
+  // Electrical specs (Indonesian 415Wp+ STC Reference)
   ctx.font = '15px ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
   ctx.fillStyle = '#334155';
-  ctx.fillText('Model: PV-M108-410W-ID (Half-Cut)', labelX + 24, labelY + 80);
-  ctx.fillText('Max Power (Pmax):        410 Wp (STC)', labelX + 24, labelY + 110);
+  ctx.fillText('Model: PV-M108-415W-ID (182mm Half-Cut)', labelX + 24, labelY + 80);
+  ctx.fillText('Max Power (Pmax):        415 Wp (STC)', labelX + 24, labelY + 110);
   ctx.fillText('Open-Circuit V (Voc):    37.8 V', labelX + 24, labelY + 135);
-  ctx.fillText('Short-Circuit I (Isc):   13.6 A', labelX + 24, labelY + 160);
+  ctx.fillText('Short-Circuit I (Isc):   13.85 A', labelX + 24, labelY + 160);
   ctx.fillText('Opt Operating V (Vmp):   31.6 V', labelX + 24, labelY + 185);
-  ctx.fillText('Opt Operating I (Imp):   13.0 A', labelX + 24, labelY + 210);
-  ctx.fillText('Max System Voltage:      1500 V DC | IP68 Split J-Box', labelX + 24, labelY + 235);
+  ctx.fillText('Opt Operating I (Imp):   13.13 A', labelX + 24, labelY + 210);
+  ctx.fillText('Dim: 1722x1134x35mm | Area: 1.95m² | Eff: 21.3%', labelX + 24, labelY + 235);
   ctx.fillText('Sertifikasi: SNI 04-3850.2 / IEC 61215 / IEC 61730', labelX + 24, labelY + 260);
 
   // Warning triangle badge
@@ -290,7 +290,7 @@ export function createBacksheetTexture() {
     ctx.fillRect(bx, labelY + 290, bw, 42);
   }
   ctx.font = '13px monospace';
-  ctx.fillText('SN: ID-PLTS-2026-410W-994182 | SNI & TKDN CERTIFIED', labelX + 24, labelY + 355);
+  ctx.fillText('SN: ID-PLTS-2026-415W-994182 | SNI & TKDN CERTIFIED', labelX + 24, labelY + 355);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -493,7 +493,7 @@ export function createCentralInverterScreenTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
 
-  function renderScreen(watts = 410) {
+  function renderScreen(watts = 415) {
     // Background: Deep obsidian glass
     ctx.fillStyle = '#060a12';
     ctx.fillRect(0, 0, 512, 256);
@@ -523,8 +523,8 @@ export function createCentralInverterScreenTexture() {
     ctx.fillText('MPPT 1 & 2 • 220V/50Hz', 220, 30);
     ctx.fillText('12:45 WIB', 420, 30);
 
-    // Scale residential array wattage (simulate a typical 4kW residential string array based on current panel wattage)
-    const arrayMultiplier = 9.8; // ~4.0 kW array at 410W panel reference
+    // Scale residential array wattage (simulate a typical 4kW residential string array based on 415W Tier-1 panel)
+    const arrayMultiplier = 9.7; // ~4.0 kW array at 415W panel reference (10-panel string)
     const totalWatts = Math.round(watts * arrayMultiplier);
     const kwStr = (totalWatts / 1000).toFixed(2);
     const eff = 98.4;
@@ -563,7 +563,7 @@ export function createCentralInverterScreenTexture() {
     ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
     ctx.fillStyle = '#e2e8f0';
 
-    const dcV = (380 + (watts / 410) * 35).toFixed(0);
+    const dcV = (380 + (watts / 415) * 35).toFixed(0);
     const dcA = ((totalWatts / dcV) || 0).toFixed(1);
     ctx.fillText(`${dcV}V / ${dcA}A`, 24, colY + 22);
     ctx.fillText('220V / 50Hz', 150, colY + 22);
@@ -594,7 +594,7 @@ export function createCentralInverterScreenTexture() {
   }
 
   // Initial render
-  renderScreen(410);
+  renderScreen(415);
   texture.updateScreen = renderScreen;
 
   return texture;
