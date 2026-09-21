@@ -19,6 +19,9 @@ export class AnimationController {
     this.orbitSpeed = 0.0035; // Slow, cinematic 360-degree pan
     this.isHoveringOrDragging = false;
     this.labelsVisible = true;
+    this.gridMode = 'ongrid'; // 'ongrid' or 'offgrid'
+    this.inverterMode = 'micro'; // 'micro' or 'central'
+    this.isPlnFocused = false;
 
     // Camera initial orbit parameters
     this.cameraRadius = 4.4;
@@ -29,30 +32,128 @@ export class AnimationController {
     this.setupInteractions();
   }
 
+  createAnnotationLabel({ id, step, title, desc, offset = new THREE.Vector3(0.65, 0, 0), isExternal = false, isVisibleCheck = null }) {
+    const el = document.createElement('div');
+    el.className = 'layer-annotation';
+    el.innerHTML = `
+      <div class="annotation-dot"></div>
+      <div class="annotation-line"></div>
+      <div class="annotation-card">
+        <span class="annotation-step">${step}</span>
+        <div class="annotation-content">
+          <span class="annotation-title">${title}</span>
+          <span class="annotation-desc">${desc}</span>
+        </div>
+      </div>
+    `;
+    this.labelContainer.appendChild(el);
+    const item = {
+      id: id,
+      domElement: el,
+      object: null,
+      anchorOffset: offset,
+      isExternal: isExternal,
+      isVisibleCheck: isVisibleCheck
+    };
+    this.labelElements.push(item);
+    return item;
+  }
+
   initLabels() {
     this.labelElements = [];
 
+    // 1. Solar Panel Sandwich Layers (1 to 8)
     this.model.layers.forEach((layer) => {
-      const el = document.createElement('div');
-      el.className = 'layer-annotation';
-      el.innerHTML = `
-        <div class="annotation-dot"></div>
-        <div class="annotation-line"></div>
-        <div class="annotation-card">
-          <span class="annotation-step">${layer.name.split('.')[0]}</span>
-          <div class="annotation-content">
-            <span class="annotation-title">${layer.name.split('. ')[1]}</span>
-            <span class="annotation-desc">${this.getLayerSubtitle(layer.id)}</span>
-          </div>
-        </div>
-      `;
-      this.labelContainer.appendChild(el);
-      this.labelElements.push({
+      const step = layer.name.split('.')[0];
+      const title = layer.name.split('. ')[1];
+      const desc = this.getLayerSubtitle(layer.id);
+      const item = this.createAnnotationLabel({
         id: layer.id,
-        domElement: el,
-        object: layer.object,
-        anchorOffset: new THREE.Vector3(0.65, 0, 0)
+        step: step,
+        title: title,
+        desc: desc,
+        offset: new THREE.Vector3(0.65, 0, 0),
+        isExternal: false
       });
+      item.object = layer.object;
+    });
+
+    // 2. External System Components
+    // 2.1 PLN Distribution Board (Main Overview Badge)
+    this.createAnnotationLabel({
+      id: 'plnDistribution',
+      step: 'PLN',
+      title: 'Panel PLN & Proteksi (AMI + ATS Posisi I)',
+      desc: 'Meter AMI SPLN D3.022-1 • Zero-Export DDSU666 • ATS Sync 50Hz • SPD Type 2',
+      offset: new THREE.Vector3(0.40, 0.26, 0.0),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && !this.isPlnFocused
+    });
+
+    // 2.2 ATS Changeover Switch (Sub-badge when inspected)
+    this.createAnnotationLabel({
+      id: 'atsSwitch',
+      step: 'ATS',
+      title: 'Automatic Transfer Switch (ATS 10ms)',
+      desc: 'Posisi I: Sinkronisasi PLN 220V 50Hz • Kontak Tertutup',
+      offset: new THREE.Vector3(0.20, 0.16, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && this.isPlnFocused
+    });
+
+    // 2.3 Zero-Export Power Sensor DDSU666 & CT Clamp
+    this.createAnnotationLabel({
+      id: 'zeroExportSensor',
+      step: 'CT',
+      title: 'Zero-Export Sensor (DDSU666)',
+      desc: 'Modbus RS-485 • Pembatas Ekspor 0.00 kW (Permen ESDM 2/2024)',
+      offset: new THREE.Vector3(-0.20, -0.16, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && this.isPlnFocused
+    });
+
+    // 2.4 PLN Smart Meter AMI
+    this.createAnnotationLabel({
+      id: 'plnSmartMeter',
+      step: 'AMI',
+      title: 'Meteran Pintar PLN AMI',
+      desc: 'SPLN D3.022-1:2020 • Komunikasi AMR/AMI • 220V Single-Phase',
+      offset: new THREE.Vector3(-0.20, 0.16, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && this.isPlnFocused
+    });
+
+    // 2.5 AC Combiner & Essential Loads Panel
+    this.createAnnotationLabel({
+      id: 'acCombiner',
+      step: 'SPD',
+      title: 'AC Combiner & Beban Esensial (PUIL 2011)',
+      desc: 'Surge Arrester SPD Type 2 (40kA) + RCD 30mA + Sirkuit Esensial',
+      offset: new THREE.Vector3(0.20, -0.16, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && this.isPlnFocused
+    });
+
+    // 2.6 Home Battery Energy Storage System (BESS)
+    this.createAnnotationLabel({
+      id: 'batteryStorage',
+      step: 'BESS',
+      title: '10.5kWh Home Battery (LiFePO4 BESS)',
+      desc: '14 Sel Prismatik • 51.2V DC / 206Ah • Buffer Konsumsi Mandiri & Peak Shaving',
+      offset: new THREE.Vector3(0.40, 0.26, 0.0),
+      isExternal: true,
+      isVisibleCheck: () => this.batteryStorage && this.batteryStorage.isVisible
+    });
+
+    // 2.7 Soladeck Rooftop Transition Box
+    this.createAnnotationLabel({
+      id: 'soladeck',
+      step: 'ROOF',
+      title: 'Soladeck Rooftop Transition Box',
+      desc: 'NEMA 3R Flashing Atap • Transisi DC MC4 ke Pipa Logam EMT',
+      offset: new THREE.Vector3(0.26, 0.14, 0.0),
+      isExternal: true,
+      isVisibleCheck: () => this.centralInverter && this.centralInverter.isVisible && this.inverterMode === 'central'
     });
   }
 
@@ -209,29 +310,109 @@ export class AnimationController {
 
   setInverterMode(mode) {
     this.inverterMode = mode;
-    const isCentral = (mode === 'central');
+    this.updateContextualLabels();
+  }
 
-    // Update 8th layer annotation label if it exists
-    const invLabelItem = this.labelElements.find(item => item.id === 'inverter');
-    if (invLabelItem) {
-      const titleEl = invLabelItem.domElement.querySelector('.annotation-title');
-      const descEl = invLabelItem.domElement.querySelector('.annotation-desc');
-      const stepEl = invLabelItem.domElement.querySelector('.annotation-step');
+  setGridMode(mode) {
+    this.gridMode = mode;
+    this.updateContextualLabels();
+  }
+
+  updateContextualLabels() {
+    const isOffGrid = (this.gridMode === 'offgrid');
+    const isCentral = (this.inverterMode === 'central');
+
+    // 1. Inverter Label
+    const invItem = this.labelElements.find(item => item.id === 'inverter');
+    if (invItem) {
+      const titleEl = invItem.domElement.querySelector('.annotation-title');
+      const descEl = invItem.domElement.querySelector('.annotation-desc');
+      const stepEl = invItem.domElement.querySelector('.annotation-step');
 
       if (isCentral && this.centralInverter) {
-        invLabelItem.object = this.centralInverter.group;
-        invLabelItem.anchorOffset = new THREE.Vector3(0.35, 0.20, 0);
-        if (titleEl) titleEl.textContent = 'Central Hybrid Inverter (5kW)';
-        if (descEl) descEl.textContent = '5.0kW 220V/50Hz Hybrid Inverter (Dual MPPT & PLN Grid)';
-        if (stepEl) stepEl.textContent = '8';
+        invItem.object = this.centralInverter.group;
+        invItem.anchorOffset = new THREE.Vector3(0.35, 0.20, 0);
+        if (stepEl) stepEl.textContent = 'INV';
+        if (titleEl) titleEl.textContent = isOffGrid ? 'Central Inverter 5.0kW (EPS Mode)' : 'Central Hybrid Inverter (5.0kW)';
+        if (descEl) descEl.textContent = isOffGrid
+          ? 'Grid-Forming Microgrid 220V 50Hz • Pasokan Beban Esensial UPS <10ms'
+          : '5.0kW 220V/50Hz • Grid-Following PLL • Zero-Export Throttling Aktif';
       } else {
         const invLayer = this.model.layers.find(l => l.id === 'inverter');
-        if (invLayer) invLabelItem.object = invLayer.object;
-        invLabelItem.anchorOffset = new THREE.Vector3(0.65, 0, 0);
-        if (titleEl) titleEl.textContent = 'Microinverter & AC Trunk (MLPE)';
-        if (descEl) descEl.textContent = 'Enphase-Style 220V 50Hz MLPE Inverter (PLN Grid Profile)';
+        if (invLayer) invItem.object = invLayer.object;
+        invItem.anchorOffset = new THREE.Vector3(0.65, 0, 0);
         if (stepEl) stepEl.textContent = '8';
+        if (titleEl) titleEl.textContent = isOffGrid ? 'Microinverter (Non-Aktif di Off-Grid)' : 'Microinverter & AC Trunk (MLPE 220V)';
+        if (descEl) descEl.textContent = isOffGrid
+          ? 'Proteksi Anti-Islanding Trip • Memerlukan Inverter Pembentuk Grid PLN'
+          : 'Enphase-Style 220V 50Hz MLPE • MPPT per Panel • Sinkronisasi PLN';
       }
+    }
+
+    // 2. PLN Board Main Label
+    const plnItem = this.labelElements.find(i => i.id === 'plnDistribution');
+    if (plnItem) {
+      const titleEl = plnItem.domElement.querySelector('.annotation-title');
+      const descEl = plnItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'Panel PLN & Proteksi (ATS Posisi II EPS)' : 'Panel PLN & Proteksi (AMI + ATS Posisi I)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'PLN 0V Blackout • ATS Air-Gap Disconnect (<10ms) • Beban Esensial Terisolasi'
+        : 'Meter AMI SPLN D3.022-1 • Zero-Export DDSU666 • ATS Sync 50Hz • SPD Type 2';
+    }
+
+    // 3. ATS Switch Sub-Label
+    const atsItem = this.labelElements.find(i => i.id === 'atsSwitch');
+    if (atsItem) {
+      const titleEl = atsItem.domElement.querySelector('.annotation-title');
+      const descEl = atsItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'ATS: Posisi II (EPS Islanded Disconnect)' : 'ATS: Posisi I (PLN Synchronized)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Isolasi Fisik Galvanis IEC 62116 (<10ms) • Pasokan Cadangan Terisolasi'
+        : 'Kontak Tertutup ke PLN 220V 50Hz • Sinkronisasi Fasa 50Hz';
+    }
+
+    // 4. Zero-Export Sensor Sub-Label
+    const ctItem = this.labelElements.find(i => i.id === 'zeroExportSensor');
+    if (ctItem) {
+      const titleEl = ctItem.domElement.querySelector('.annotation-title');
+      const descEl = ctItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'Zero-Export Sensor (DDSU666 Standby)' : 'Zero-Export Sensor (DDSU666 & CT)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Sensor Standby (Tegangan Jaringan PLN 0V Blackout)'
+        : 'Modbus RS-485 • Pembatas Ekspor 0.00 kW (Permen ESDM 2/2024)';
+    }
+
+    // 5. PLN Smart Meter AMI Sub-Label
+    const amiItem = this.labelElements.find(i => i.id === 'plnSmartMeter');
+    if (amiItem) {
+      const titleEl = amiItem.domElement.querySelector('.annotation-title');
+      const descEl = amiItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'Meteran Pintar PLN AMI (Padam 0V)' : 'Meteran Pintar PLN AMI (Aktif 220V)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Tegangan Feeder Jaringan PLN 0V (Mati Lampu / Pemadaman)'
+        : 'Single-Phase 220V/50Hz SPLN D3.022-1:2020 • Ekspor Terbatas 0 kW';
+    }
+
+    // 6. AC Combiner Sub-Label
+    const acItem = this.labelElements.find(i => i.id === 'acCombiner');
+    if (acItem) {
+      const titleEl = acItem.domElement.querySelector('.annotation-title');
+      const descEl = acItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'AC Combiner (Beban Esensial EPS)' : 'AC Combiner & Beban Rumah (PUIL 2011)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Pasokan Daya Cadangan Terisolasi (Kulkas, Lampu, Pompa Air, WiFi)'
+        : 'Surge Arrester SPD Type 2 (40kA) + RCD 30mA + Sirkuit Esensial';
+    }
+
+    // 7. Battery Storage Label
+    const battItem = this.labelElements.find(i => i.id === 'batteryStorage');
+    if (battItem) {
+      const titleEl = battItem.domElement.querySelector('.annotation-title');
+      const descEl = battItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? '10.5kWh BESS (Grid-Forming Master)' : '10.5kWh Home Battery (LiFePO4 BESS)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Wajib Aktif • Sumber Pembentuk Frekuensi 50Hz & Penstabil Tegangan Bus DC'
+        : '14 Sel Prismatik • 51.2V DC / 206Ah • Buffer Konsumsi Mandiri & Peak Shaving';
     }
   }
 
@@ -240,10 +421,23 @@ export class AnimationController {
     const heightHalf = this.scene.height / 2;
     const tempV = new THREE.Vector3();
 
-    // Only show detailed labels when partially or fully exploded
-    const labelOpacity = Math.max(0, (this.explodeProgress - 0.15) / 0.85);
+    // Only show detailed panel layer labels when partially or fully exploded
+    const panelLabelOpacity = Math.max(0, (this.explodeProgress - 0.15) / 0.85);
 
     this.labelElements.forEach((item) => {
+      // 1. Visibility Check
+      if (item.isVisibleCheck && !item.isVisibleCheck()) {
+        item.domElement.style.opacity = '0';
+        item.domElement.style.pointerEvents = 'none';
+        return;
+      }
+
+      if (!item.object) {
+        item.domElement.style.opacity = '0';
+        item.domElement.style.pointerEvents = 'none';
+        return;
+      }
+
       // If in central inverter mode and central inverter is not visible, hide inverter label
       if (item.id === 'inverter' && this.inverterMode === 'central' && (!this.centralInverter || !this.centralInverter.isVisible)) {
         item.domElement.style.opacity = '0';
@@ -251,7 +445,7 @@ export class AnimationController {
         return;
       }
 
-      // World position of layer
+      // World position of layer / component
       item.object.getWorldPosition(tempV);
       // Offset to outer edge of layer for clean leader lines
       const offset = item.anchorOffset || new THREE.Vector3(0.65, 0, 0);
@@ -261,14 +455,17 @@ export class AnimationController {
       tempV.project(this.scene.camera);
       const isBehind = tempV.z > 1;
 
-      if (isBehind || labelOpacity <= 0.05) {
+      // Opacity: external components show at 1.0 whenever visible; panel layers fade in with explode
+      const targetOpacity = item.isExternal ? 1.0 : panelLabelOpacity;
+
+      if (isBehind || targetOpacity <= 0.05) {
         item.domElement.style.opacity = '0';
         item.domElement.style.pointerEvents = 'none';
       } else {
         const screenX = (tempV.x * widthHalf) + widthHalf;
         const screenY = -(tempV.y * heightHalf) + heightHalf;
 
-        item.domElement.style.opacity = labelOpacity.toFixed(2);
+        item.domElement.style.opacity = targetOpacity.toFixed(2);
         item.domElement.style.pointerEvents = 'auto';
         item.domElement.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
       }
@@ -280,6 +477,7 @@ export class AnimationController {
    */
   focusCameraOnLayer(layerId, duration = 1.3) {
     this.focusedLayerId = layerId;
+    this.isPlnFocused = (layerId === 'plnDistribution');
 
     if (!layerId || layerId === 'all') {
       // Return to overview isometric angle
@@ -486,14 +684,38 @@ export class AnimationController {
 
   setCentralInverter(centralInverter) {
     this.centralInverter = centralInverter;
+    const soladeckItem = this.labelElements.find(i => i.id === 'soladeck');
+    if (soladeckItem && centralInverter.soladeck) {
+      soladeckItem.object = centralInverter.soladeck;
+    }
+    this.updateContextualLabels();
   }
 
   setBatteryStorage(batteryStorage) {
     this.batteryStorage = batteryStorage;
+    const item = this.labelElements.find(i => i.id === 'batteryStorage');
+    if (item) item.object = batteryStorage.group;
+    this.updateContextualLabels();
   }
 
   setPlnDistribution(plnDistribution) {
     this.plnDistribution = plnDistribution;
+    const plnItem = this.labelElements.find(i => i.id === 'plnDistribution');
+    if (plnItem) plnItem.object = plnDistribution.group;
+
+    const atsItem = this.labelElements.find(i => i.id === 'atsSwitch');
+    if (atsItem) atsItem.object = plnDistribution.group;
+
+    const ctItem = this.labelElements.find(i => i.id === 'zeroExportSensor');
+    if (ctItem) ctItem.object = plnDistribution.group;
+
+    const amiItem = this.labelElements.find(i => i.id === 'plnSmartMeter');
+    if (amiItem) amiItem.object = plnDistribution.group;
+
+    const acItem = this.labelElements.find(i => i.id === 'acCombiner');
+    if (acItem) acItem.object = plnDistribution.group;
+
+    this.updateContextualLabels();
   }
 
   /**
@@ -501,6 +723,7 @@ export class AnimationController {
    */
   focusCameraOnPlnDistribution(duration = 1.4) {
     this.isAutoOrbit = false;
+    this.isPlnFocused = true;
 
     const targetPos = { x: 1.15, y: 0.18, z: 0.02 };
     const camPos = { x: 1.45, y: 0.36, z: 0.96 };
@@ -528,6 +751,7 @@ export class AnimationController {
    */
   focusCameraOnCentralInverter(duration = 1.4) {
     this.isAutoOrbit = false;
+    this.isPlnFocused = false;
 
     const targetPos = { x: 1.95, y: 0.16, z: 0.02 };
     const camPos = { x: 2.45, y: 0.42, z: 0.92 };
@@ -555,6 +779,7 @@ export class AnimationController {
    */
   focusCameraOnBatteryStorage(duration = 1.4) {
     this.isAutoOrbit = false;
+    this.isPlnFocused = false;
 
     const targetPos = { x: 2.85, y: 0.15, z: 0.02 };
     const camPos = { x: 3.30, y: 0.38, z: 0.88 };

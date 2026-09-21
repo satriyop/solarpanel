@@ -67,6 +67,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
   const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
+  const labelInvStat = document.getElementById('label-inv-stat');
+  const labelGridStat = document.getElementById('label-grid-stat');
+  const valGridStat = document.getElementById('val-grid-stat');
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
@@ -281,6 +284,41 @@ window.addEventListener('DOMContentLoaded', () => {
     if (btnModeOffgrid) btnModeOffgrid.classList.toggle('active', isOffGrid);
     if (badgeGridMode) badgeGridMode.textContent = isOffGrid ? 'OFF-GRID EPS' : 'ON-GRID PLN';
 
+    // 0. Update 3D annotation labels contextually (PLN, ATS, Zero-Export, Inverter, BESS)
+    anim.setGridMode(mode);
+
+    // Update layer pill texts
+    if (pillPln) {
+      pillPln.innerHTML = isOffGrid ? '⚡ PLN & Proteksi (ATS Posisi II EPS)' : '⚡ PLN & Proteksi (AMI + ATS Posisi I)';
+    }
+    if (pillBattery) {
+      pillBattery.innerHTML = isOffGrid ? '🔋 BESS 10.5kWh (Wajib • Grid-Forming)' : '🔋 Home Battery (10.5kWh LFP)';
+    }
+    if (pillInverter) {
+      pillInverter.innerHTML = isOffGrid ? '8. Central Inverter (5kW EPS)' : (currentInverterMode === 'central' ? '8. Central Inverter (5kW 220V)' : '8. Microinverter (220V)');
+    }
+
+    // Update Sun Simulator conversion card telemetry
+    if (labelGridStat) {
+      labelGridStat.textContent = isOffGrid ? 'PLN FEEDER' : 'PLN GRID';
+    }
+    if (valGridStat) {
+      valGridStat.textContent = isOffGrid ? '0V (PADAM / EPS)' : '220V / 50Hz';
+      valGridStat.style.color = isOffGrid ? '#f59e0b' : '#38bdf8';
+    }
+    if (labelInvStat) {
+      labelInvStat.textContent = (currentInverterMode === 'central')
+        ? (isOffGrid ? 'CENTRAL EPS INV' : 'CENTRAL INVERTER')
+        : 'MLPE INVERTER';
+    }
+
+    // Update bottom dock button titles
+    if (btnTogglePln) {
+      btnTogglePln.title = isOffGrid
+        ? 'Panel Distribusi PLN (ATS Posisi II: EPS Islanded Disconnect <10ms • PLN 0V)'
+        : 'Panel Distribusi PLN (Smart Meter AMI, Zero-Export DDSU666, ATS Posisi I, SPD Type 2)';
+    }
+
     if (isOffGrid) {
       // 1. Off-grid mode mandates Central Hybrid Inverter with ATS changeover
       if (currentInverterMode !== 'central') {
@@ -366,8 +404,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 7. Update Layer Pill label
     if (pillInverter) {
-      pillInverter.textContent = isCentral ? '8. Central Inverter (5kW 220V)' : '8. Microinverter (220V)';
+      pillInverter.textContent = isCentral
+        ? (currentGridMode === 'offgrid' ? '8. Central Inverter (5kW EPS)' : '8. Central Inverter (5kW 220V)')
+        : '8. Microinverter (220V)';
       pillInverter.dataset.layer = isCentral ? 'centralInverter' : 'inverter';
+    }
+
+    // 8. Update Sun Card Inverter label
+    if (labelInvStat) {
+      labelInvStat.textContent = isCentral
+        ? (currentGridMode === 'offgrid' ? 'CENTRAL EPS INV' : 'CENTRAL INVERTER')
+        : 'MLPE INVERTER';
     }
 
     // 8. Update Central Inverter live telemetry if active
@@ -515,6 +562,7 @@ window.addEventListener('DOMContentLoaded', () => {
   studio.setSunSimulatorVisible(false);
   solarPanel.setSunAbsorption(1.0);
   setInverterArchitecture('micro');
+  setGridMode('ongrid');
 
   // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel
   autoCycleTimer = setTimeout(() => {
