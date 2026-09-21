@@ -262,24 +262,7 @@ export class StudioScene {
 
     this.sunTargetY = 0.02; // Dynamically tracks top layer
 
-    // 1. Celestial Arc Path (0° to 80°)
-    const arcPoints = [];
-    for (let deg = 0; deg <= 80; deg += 2) {
-      arcPoints.push(this.calculateSunPosition(deg));
-    }
-    const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPoints);
-    const arcMat = new THREE.LineDashedMaterial({
-      color: 0xf59e0b,
-      dashSize: 0.06,
-      gapSize: 0.04,
-      transparent: true,
-      opacity: 0.65
-    });
-    this.sunArc = new THREE.Line(arcGeo, arcMat);
-    this.sunArc.computeLineDistances();
-    this.sunGroup.add(this.sunArc);
-
-    // 2. Glowing 3D Sun Orb (White core + golden corona halo + radiant glare disc)
+    // 1. Glowing 3D Sun Orb (White core + golden corona halo + radiant glare disc)
     this.sunOrb = new THREE.Group();
 
     const coreGeo = new THREE.SphereGeometry(0.18, 24, 24);
@@ -513,7 +496,6 @@ export class StudioScene {
   setSunSimulatorVisible(visible) {
     this.sunSimulatorVisible = visible;
     if (this.sunOrb) this.sunOrb.visible = visible;
-    if (this.sunArc) this.sunArc.visible = visible;
     if (this.incomingBeamsGroup) this.incomingBeamsGroup.visible = visible;
     if (this.reflectedBeamsGroup) this.reflectedBeamsGroup.visible = visible;
 
