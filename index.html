@@ -92,6 +92,7 @@
         <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
         <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
         <button class="layer-pill" data-layer="inverter">8. Microinverter</button>
+        <button id="pill-central-inverter" class="layer-pill system-pill" data-layer="centralInverter" style="display: none;">⚡ Central Inverter</button>
       </div>
 
       <!-- Bottom Control Dock -->
@@ -164,6 +165,17 @@
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
             Power Flow
+          </button>
+
+          <button id="btn-toggle-central-inverter" class="hud-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <line x1="7" y1="8" x2="17" y2="8"></line>
+              <line x1="7" y1="12" x2="17" y2="12"></line>
+              <circle cx="8" cy="16" r="1.5" fill="currentColor"></circle>
+              <circle cx="16" cy="16" r="1.5" fill="currentColor"></circle>
+            </svg>
+            Central Inverter
           </button>
 
           <button id="btn-toggle-view" class="hud-toggle-btn">

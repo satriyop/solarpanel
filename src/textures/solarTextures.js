@@ -482,3 +482,255 @@ export function createMicroinverterPlateTexture() {
   texture.minFilter = THREE.LinearFilter;
   return texture;
 }
+
+// 7. Central Hybrid Inverter OLED/LCD Telemetry Screen Texture (512x256)
+export function createCentralInverterScreenTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+
+  function renderScreen(watts = 410) {
+    // Background: Deep obsidian glass
+    ctx.fillStyle = '#060a12';
+    ctx.fillRect(0, 0, 512, 256);
+
+    // Subtle LCD pixel raster grid
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.03)';
+    for (let y = 0; y < 256; y += 4) {
+      ctx.fillRect(0, y, 512, 2);
+    }
+
+    // Top status header bar
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(8, 8, 496, 36);
+
+    // Online Status Indicator Dot & Pill
+    ctx.beginPath();
+    ctx.arc(28, 26, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#10b981'; // Bright green
+    ctx.fill();
+
+    ctx.font = 'bold 13px "JetBrains Mono", monospace, sans-serif';
+    ctx.fillStyle = '#10b981';
+    ctx.fillText('GRID-TIED ONLINE', 42, 30);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px "JetBrains Mono", monospace, sans-serif';
+    ctx.fillText('MPPT 1 & 2 ACTIVE', 240, 30);
+    ctx.fillText('12:45 PM', 430, 30);
+
+    // Scale residential array wattage (simulate a typical 4kW residential string array based on current panel wattage)
+    const arrayMultiplier = 9.8; // ~4.0 kW array at 410W panel reference
+    const totalWatts = Math.round(watts * arrayMultiplier);
+    const kwStr = (totalWatts / 1000).toFixed(2);
+    const eff = 98.4;
+    const acKw = ((totalWatts * eff) / 100000).toFixed(2);
+
+    // Main Power Readout
+    ctx.font = 'bold 48px "JetBrains Mono", monospace, sans-serif';
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillText(`${acKw}`, 24, 106);
+
+    ctx.font = 'bold 22px "JetBrains Mono", monospace, sans-serif';
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('kW AC', 168, 106);
+
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('REAL-TIME SOLAR INVERTER OUTPUT (PAC)', 24, 126);
+
+    // Horizontal divider
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(20, 138);
+    ctx.lineTo(492, 138);
+    ctx.stroke();
+
+    // 4-Column Live Electrical Telemetry Grid
+    const colY = 164;
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('DC INPUT (V/I)', 24, colY);
+    ctx.fillText('GRID VOLTAGE', 150, colY);
+    ctx.fillText('DAY YIELD', 270, colY);
+    ctx.fillText('CEC EFFICIENCY', 380, colY);
+
+    ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+
+    const dcV = (380 + (watts / 410) * 35).toFixed(0);
+    const dcA = ((totalWatts / dcV) || 0).toFixed(1);
+    ctx.fillText(`${dcV}V / ${dcA}A`, 24, colY + 22);
+    ctx.fillText('240V / 60Hz', 150, colY + 22);
+    ctx.fillText('18.4 kWh', 270, colY + 22);
+
+    ctx.fillStyle = '#10b981';
+    ctx.fillText('98.4%', 380, colY + 22);
+
+    // Power Output Gauge Bar
+    const barWidth = 472;
+    const fillRatio = Math.min(1.0, Math.max(0.05, totalWatts / 4500));
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillRect(20, 218, barWidth, 14);
+
+    const grad = ctx.createLinearGradient(20, 0, 20 + barWidth * fillRatio, 0);
+    grad.addColorStop(0, '#0284c7');
+    grad.addColorStop(0.7, '#06b6d4');
+    grad.addColorStop(1, '#10b981');
+    ctx.fillStyle = grad;
+    ctx.fillRect(20, 218, barWidth * fillRatio, 14);
+
+    // High-tech screen border glow
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(2, 2, 508, 252);
+
+    texture.needsUpdate = true;
+  }
+
+  // Initial render
+  renderScreen(410);
+  texture.updateScreen = renderScreen;
+
+  return texture;
+}
+
+// 8. Laser-Etched Specification Rating Plate Texture for Central Inverter (512x256)
+export function createCentralInverterSpecPlateTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Brushed aluminum metallic plate
+  const grad = ctx.createLinearGradient(0, 0, 512, 256);
+  grad.addColorStop(0, '#f1f5f9');
+  grad.addColorStop(0.5, '#cbd5e1');
+  grad.addColorStop(1, '#94a3b8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Border & rivets
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(8, 8, 496, 240);
+
+  [[16, 16], [496, 16], [16, 240], [496, 240]].forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#64748b';
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.stroke();
+  });
+
+  // Header Title
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillText('HYBRID STRING INVERTER 5.0kW', 28, 44);
+
+  ctx.font = '13px sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.fillText('Grid-Tied PV Inverter with Integrated Rapid Shutdown & Energy Storage Bus', 28, 66);
+
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(28, 78);
+  ctx.lineTo(484, 78);
+  ctx.stroke();
+
+  // DC Input Ratings
+  ctx.font = 'bold 14px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('PV DC INPUT (DUAL MPPT):', 28, 102);
+  ctx.font = '13px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText('Max Voc: 600Vdc | MPPT: 100 - 550Vdc | Imax: 2x 15.0A', 28, 122);
+
+  // AC Output Ratings
+  ctx.font = 'bold 14px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('AC GRID OUTPUT:', 28, 150);
+  ctx.font = '13px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText('Vac: 240V Split-Phase | 60Hz | Pn: 5000VA | In: 20.8A', 28, 170);
+
+  // Standards & Compliance
+  ctx.font = 'bold 12.5px sans-serif';
+  ctx.fillStyle = '#047857';
+  ctx.fillText('CEC WEIGHTED EFFICIENCY: 98.4% • TYPE 4X OUTDOOR RATED', 28, 204);
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#475569';
+  ctx.fillText('UL 1741-SB / IEEE 1547-2018 • NEC 690.12 Rapid Shutdown Certified', 28, 224);
+
+  // QR Code Graphic
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(410, 95, 68, 68);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(416, 101, 56, 56);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(422, 107, 18, 18);
+  ctx.fillRect(448, 107, 16, 16);
+  ctx.fillRect(422, 133, 16, 16);
+  ctx.fillRect(444, 129, 12, 12);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+// 9. Rotary DC Disconnect Switch Faceplate Texture (256x256)
+export function createRotarySwitchTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Yellow warning safety plate
+  ctx.fillStyle = '#eab308';
+  ctx.beginPath();
+  ctx.arc(128, 128, 122, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Outer warning border ring
+  ctx.strokeStyle = '#ca8a04';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(128, 128, 108, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Labels: Top "ON", Left "OFF"
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 22px "JetBrains Mono", monospace, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ON', 128, 42);
+  ctx.fillText('OFF', 46, 136);
+
+  // Safety Text
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('DC DISCONNECT', 128, 204);
+  ctx.font = '9px sans-serif';
+  ctx.fillStyle = '#713f12';
+  ctx.fillText('RAPID SHUTDOWN', 128, 222);
+
+  // Red pointer indicator circle
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(128, 54, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+

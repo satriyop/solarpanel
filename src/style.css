@@ -257,6 +257,29 @@ body {
   border-color: #0f1217;
 }
 
+.layer-pill.system-pill {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #059669;
+}
+
+.layer-pill.system-pill:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+}
+
+.studio-dark .layer-pill.system-pill {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.studio-dark .layer-pill.system-pill.active {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
 /* Bottom Control Dock */
 .hud-footer {
   bottom: 24px;

@@ -2,6 +2,7 @@ import { StudioScene } from './scene/StudioScene.js';
 import { SolarPanelModel } from './components/SolarPanelModel.js';
 import { AnimationController } from './animation/AnimationController.js';
 import { PowerFlowController } from './components/PowerFlowController.js';
+import { CentralInverterModel } from './components/CentralInverterModel.js';
 
 // Initialize application on DOM content loaded
 window.addEventListener('DOMContentLoaded', () => {
@@ -15,13 +16,19 @@ window.addEventListener('DOMContentLoaded', () => {
   const solarPanel = new SolarPanelModel();
   studio.scene.add(solarPanel.group);
 
-  // 3. Initialize Animation & Motion Controller
+  // 3. Initialize Wall-Mounted Central / Hybrid String Inverter (5.0kW)
+  const centralInverter = new CentralInverterModel();
+  studio.scene.add(centralInverter.group);
+
+  // 4. Initialize Animation & Motion Controller
   const anim = new AnimationController(solarPanel, studio, labelsContainer);
+  anim.setCentralInverter(centralInverter);
 
-  // 4. Initialize Electrical Power Flow Controller (DC to AC Conversion)
+  // 5. Initialize Electrical Power Flow Controller (DC to AC Conversion)
   const powerFlow = new PowerFlowController(solarPanel, studio);
+  powerFlow.setCentralInverter(centralInverter);
 
-  // 5. UI Elements
+  // 6. UI Elements
   const btnStartFrame = document.getElementById('btn-start-frame');
   const btnEndFrame = document.getElementById('btn-end-frame');
   const sliderExplode = document.getElementById('slider-explode');
@@ -31,8 +38,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnTogglePower = document.getElementById('btn-toggle-power');
+  const btnToggleCentralInverter = document.getElementById('btn-toggle-central-inverter');
   const btnToggleView = document.getElementById('btn-toggle-view');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
+  const pillCentralInverter = document.getElementById('pill-central-inverter');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
   const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
@@ -42,6 +51,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isDarkTheme = true;
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
+  let isCentralInverterActive = false;
   let isUndersideView = false;
   let currentWatts = 410;
 
@@ -81,6 +91,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 3. Update 3D silicon wafer photon absorption glow
     solarPanel.setSunAbsorption(relG);
+
+    // 4. Update Central Inverter live telemetry if present
+    if (centralInverter) {
+      centralInverter.updateTelemetry(watts);
+    }
   }
 
   // Update UI & Sun Landing Height when separation progress changes
@@ -205,6 +220,21 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Central Inverter Toggle (Wall-Mounted 5.0kW Hybrid String Inverter)
+  if (btnToggleCentralInverter) {
+    btnToggleCentralInverter.addEventListener('click', () => {
+      isCentralInverterActive = !isCentralInverterActive;
+      btnToggleCentralInverter.classList.toggle('active', isCentralInverterActive);
+      centralInverter.setVisible(isCentralInverterActive);
+      if (pillCentralInverter) {
+        pillCentralInverter.style.display = isCentralInverterActive ? 'inline-block' : 'none';
+      }
+      if (isCentralInverterActive) {
+        centralInverter.updateTelemetry(currentWatts);
+      }
+    });
+  }
+
   // Camera View Toggle (Front Sun-Facing Cells vs Underside MLPE Microinverter & J-Box)
   if (btnToggleView) {
     btnToggleView.addEventListener('click', () => {
@@ -283,11 +313,16 @@ window.addEventListener('DOMContentLoaded', () => {
       pill.classList.add('active');
       const layerId = pill.dataset.layer;
 
-      // 1. Isolate layer opacity
-      solarPanel.focusLayer(layerId);
+      if (layerId === 'centralInverter') {
+        solarPanel.focusLayer('all');
+        anim.focusCameraOnCentralInverter();
+      } else {
+        // 1. Isolate layer opacity
+        solarPanel.focusLayer(layerId);
 
-      // 2. Cinematic Macro Camera Zoom: Fly right up to the component
-      anim.focusCameraOnLayer(layerId);
+        // 2. Cinematic Macro Camera Zoom: Fly right up to the component
+        anim.focusCameraOnLayer(layerId);
+      }
     });
   });
 

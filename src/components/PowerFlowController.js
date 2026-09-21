@@ -118,12 +118,46 @@ export class PowerFlowController {
     }
   }
 
+  setCentralInverter(centralInverter) {
+    this.centralInverter = centralInverter;
+    if (!centralInverter) return;
+
+    // Initialize DC conduit particles inside centralInverter.group
+    this.centralDcParticles = [];
+    for (let i = 0; i < 12; i++) {
+      const sprite = new THREE.Sprite(this.dcMat.clone());
+      sprite.scale.set(0.044, 0.044, 1);
+      centralInverter.group.add(sprite);
+      this.centralDcParticles.push({
+        sprite,
+        t: i / 12,
+        speed: 0.32
+      });
+    }
+
+    // Initialize AC drop conduit particles
+    this.centralAcParticles = [];
+    for (let i = 0; i < 6; i++) {
+      const sprite = new THREE.Sprite(this.acMat.clone());
+      sprite.scale.set(0.046, 0.046, 1);
+      centralInverter.group.add(sprite);
+      this.centralAcParticles.push({
+        sprite,
+        t: i / 6,
+        speed: 0.38
+      });
+    }
+  }
+
   setVisible(visible) {
     this.isVisible = visible;
     this.group.visible = visible;
 
     if (!visible) {
       this.model.setInverterLedPulse(1.0);
+      if (this.centralInverter) {
+        this.centralInverter.setLedPulse(1.0);
+      }
     }
   }
 
@@ -137,6 +171,35 @@ export class PowerFlowController {
 
     // Power factor scales particle speed and brightness (dimmer at sunset / 0W)
     const powerFactor = Math.max(0.12, Math.min(1.0, currentWatts / 410));
+
+    // Update Central Inverter power flow when active
+    if (this.centralInverter && this.centralInverter.isVisible) {
+      // 1. Animate DC conduit particles along the metallic EMT pipe into the inverter
+      if (this.centralDcParticles && this.centralInverter.conduitCurve) {
+        const pt = new THREE.Vector3();
+        this.centralDcParticles.forEach((p) => {
+          p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+          this.centralInverter.conduitCurve.getPoint(p.t, pt);
+          p.sprite.position.copy(pt);
+          p.sprite.material.opacity = (0.5 + 0.5 * Math.sin(p.t * Math.PI)) * powerFactor;
+        });
+      }
+
+      // 2. Animate AC output particles dropping through the bottom AC conduit to grid
+      if (this.centralAcParticles) {
+        this.centralAcParticles.forEach((p) => {
+          p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+          // Drop down along Y from -0.38 to -0.66 at (0.14, Y, 0.01)
+          p.sprite.position.set(0.14, -0.38 - p.t * 0.28, 0.01);
+          p.sprite.material.opacity = 0.7 * powerFactor;
+        });
+      }
+
+      // 3. Pulse Central Inverter status ring & update live telemetry
+      const pulseIntensity = 0.6 + 0.4 * Math.sin(this.time * (5.0 * powerFactor));
+      this.centralInverter.setLedPulse(pulseIntensity * powerFactor);
+      this.centralInverter.updateTelemetry(currentWatts);
+    }
 
     // Dynamic layer heights from model
     const cellsLayer = this.model.layers.find(l => l.id === 'cells');
