@@ -233,19 +233,55 @@ export class StudioScene {
 
 
   /**
-   * Calculate 3D position of Sun in the visible sky dome for any zenith angle (0° to 80°).
-   * Framed to be prominently visible in the upper sky from the start (angle 0°)
-   * and smoothly traverse across the celestial arc down towards the sunset horizon.
+   * Computes the exact 3D world coordinates of any aperture point (ox, oz)
+   * on the 22° tilted solar panel, dynamically tracking layer explosion separation.
+   */
+  getPanelWorldPoint(ox = 0, oz = 0) {
+    const tiltRad = THREE.MathUtils.degToRad(22);
+    const sinTilt = Math.sin(tiltRad);
+    const cosTilt = Math.cos(tiltRad);
+    const baseY = 0.08; // Base elevation of SolarPanelModel group
+    const yLayer = this.sunTargetY !== undefined ? this.sunTargetY : 0.012;
+
+    // Local point (ox, yLayer, oz) rotated by 22° around X-axis, translated by (0, baseY, 0)
+    return new THREE.Vector3(
+      ox,
+      baseY + yLayer * cosTilt - oz * sinTilt,
+      yLayer * sinTilt + oz * cosTilt
+    );
+  }
+
+  /**
+   * Calculate 3D position of Sun in the visible sky dome for any incident angle (0° to 80°).
+   * 
+   * Strictly synchronized with the 22° rooftop panel tilt and celestial diurnal motion:
+   * - At angle 0° (Solar Noon STC): Direct Normal Incidence (AOI = 0°). Sun ray is 100% perpendicular to panel.
+   * - At angle theta (0°..80°): dot(panelNormal, sunDir) == cos(theta) EXACTLY.
+   * - As afternoon progresses, Sun drops along authentic celestial arc toward Western horizon (sunset).
    */
   calculateSunPosition(angleDeg) {
-    const rad = (angleDeg * Math.PI) / 180;
-    const sinVal = Math.sin(rad);
-    // At 0° (High Noon): Sun sits at (-0.35, 2.22, -1.25) directly in the upper sky above the panel
-    // At 80° (Sunset): Sun sits at (-2.40, 0.65, -1.55) near the sunset horizon
-    const x = -0.35 - 2.05 * sinVal;
-    const y = 2.10 * Math.cos(rad * 0.95) + 0.12;
-    const z = -1.25 - 0.35 * sinVal;
-    return new THREE.Vector3(x, y, z);
+    const tiltRad = THREE.MathUtils.degToRad(22);
+    const panelCenter = this.getPanelWorldPoint(0, 0);
+
+    // Surface normal vector of the 22° tilted panel in world space
+    const panelNormal = new THREE.Vector3(0, Math.cos(tiltRad), Math.sin(tiltRad));
+
+    // Transverse westward unit vector (azimuthal sun path)
+    const westDir = new THREE.Vector3(-1, 0, 0);
+
+    // Incidence angle in radians
+    const theta = THREE.MathUtils.degToRad(angleDeg);
+
+    // Sun direction vector pointing from panel center toward Sun:
+    // dot(panelNormal, sunDir) == cos(theta) * dot(panelNormal, panelNormal) + sin(theta) * 0 == cos(theta)
+    const sunDir = new THREE.Vector3()
+      .addScaledVector(panelNormal, Math.cos(theta))
+      .addScaledVector(westDir, Math.sin(theta))
+      .normalize();
+
+    // 3D celestial distance in sky dome
+    const sunDistance = 3.35;
+    return new THREE.Vector3().copy(panelCenter).addScaledVector(sunDir, sunDistance);
   }
 
   /**
@@ -260,7 +296,7 @@ export class StudioScene {
     this.sunGroup = new THREE.Group();
     this.scene.add(this.sunGroup);
 
-    this.sunTargetY = 0.02; // Dynamically tracks top layer
+    this.sunTargetY = 0.012; // Dynamically tracks top layer
 
     // 1. Glowing 3D Sun Orb (White core + golden corona halo + radiant glare disc)
     this.sunOrb = new THREE.Group();
@@ -313,7 +349,7 @@ export class StudioScene {
 
     this.sunGroup.add(this.sunOrb);
 
-    // 3. Collimated Parallel Sunbeam Array (Covering the full 1.0m x 1.7m rectangular module)
+    // 2. Collimated Parallel Sunbeam Array (Covering the full 1.134m x 1.722m aperture)
     this.incomingBeamsGroup = new THREE.Group();
     this.incomingRays = [];
 
@@ -342,7 +378,7 @@ export class StudioScene {
       this.incomingRays.push({ line: rayLine, ox, oz });
     });
 
-    // Dynamic Volumetric Sunlight Shaft (Pyramidal Frustum from Sun Orb to Panel Corners)
+    // 3. Dynamic Volumetric Sunlight Shaft (Pyramidal Frustum from Sun Orb to Panel Corners)
     const volGeo = new THREE.BufferGeometry();
     const volPositions = new Float32Array(8 * 3);
     volGeo.setAttribute('position', new THREE.BufferAttribute(volPositions, 3));
@@ -366,9 +402,77 @@ export class StudioScene {
     this.lightVolume = new THREE.Mesh(volGeo, volMat);
     this.incomingBeamsGroup.add(this.lightVolume);
 
+    // 4. Normal Vector & Angle-of-Incidence (AOI) CAD Gizmo on panel center
+    this.aoiGizmoGroup = new THREE.Group();
+
+    // Surface Normal Arrow (Cyan/Electric Blue)
+    const normalLineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0.52, 0)
+    ]);
+    const normalLineMat = new THREE.LineBasicMaterial({
+      color: 0x06b6d4, // Cyan
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.90
+    });
+    this.normalArrowLine = new THREE.Line(normalLineGeo, normalLineMat);
+    this.aoiGizmoGroup.add(this.normalArrowLine);
+
+    const normalConeGeo = new THREE.ConeGeometry(0.014, 0.042, 16);
+    const normalConeMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+    this.normalCone = new THREE.Mesh(normalConeGeo, normalConeMat);
+    this.aoiGizmoGroup.add(this.normalCone);
+
+    // Sun Vector Arrow (Warm Solar Gold)
+    const sunRayGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0.52, 0)
+    ]);
+    const sunRayMat = new THREE.LineBasicMaterial({
+      color: 0xfbbf24, // Gold
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.92
+    });
+    this.sunRayLine = new THREE.Line(sunRayGeo, sunRayMat);
+    this.aoiGizmoGroup.add(this.sunRayLine);
+
+    const sunConeGeo = new THREE.ConeGeometry(0.014, 0.042, 16);
+    const sunConeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+    this.sunCone = new THREE.Mesh(sunConeGeo, sunConeMat);
+    this.aoiGizmoGroup.add(this.sunCone);
+
+    // Degree Arc between Normal and Sun Vector
+    const arcPoints = [];
+    for (let i = 0; i <= 24; i++) {
+      arcPoints.push(new THREE.Vector3(0, 0, 0));
+    }
+    const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcMat = new THREE.LineBasicMaterial({
+      color: 0xfef08a,
+      transparent: true,
+      opacity: 0.85
+    });
+    this.aoiArcLine = new THREE.Line(arcGeo, arcMat);
+    this.aoiGizmoGroup.add(this.aoiArcLine);
+
+    // Anchor ring disc flush with panel surface
+    const anchorGeo = new THREE.RingGeometry(0.02, 0.04, 24);
+    anchorGeo.rotateX(-Math.PI / 2);
+    const anchorMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.7
+    });
+    this.aoiAnchor = new THREE.Mesh(anchorGeo, anchorMat);
+    this.aoiGizmoGroup.add(this.aoiAnchor);
+
+    this.incomingBeamsGroup.add(this.aoiGizmoGroup);
     this.sunGroup.add(this.incomingBeamsGroup);
 
-    // 4. Fresnel Reflected Specular Rays (Simulating optical losses bouncing off glass into sky)
+    // 5. Fresnel Reflected Specular Rays (Simulating optical losses bouncing off glass into sky)
     this.reflectedBeamsGroup = new THREE.Group();
     this.reflectedRays = [];
 
@@ -398,14 +502,19 @@ export class StudioScene {
   }
 
   /**
-   * Set Sun Zenith Angle (0° = Direct Overhead High Noon, 80° = Low Grazing Sunset)
+   * Set Sun Zenith Angle (0° = Direct Normal Overhead, 80° = Low Grazing Sunset)
    * Visually animates parallel ray wavefronts, Fresnel specular reflections, and layer tracking!
    */
   setSunAngle(angleDeg) {
     this.currentSunAngle = angleDeg;
-    const rad = (angleDeg * Math.PI) / 180;
+    const rad = THREE.MathUtils.degToRad(angleDeg);
     const cosVal = Math.cos(rad);
     const sinVal = Math.sin(rad);
+
+    const tiltRad = THREE.MathUtils.degToRad(22);
+    const panelCenter = this.getPanelWorldPoint(0, 0);
+    const panelNormal = new THREE.Vector3(0, Math.cos(tiltRad), Math.sin(tiltRad));
+    const westDir = new THREE.Vector3(-1, 0, 0);
 
     // 1. Position 3D Sun Orb in the sky along the celestial arc
     const sunPos = this.calculateSunPosition(angleDeg);
@@ -419,16 +528,14 @@ export class StudioScene {
       }
     }
 
-    // Direction vector from sun towards panel center
-    const landingY = this.sunTargetY;
-    const centerTarget = new THREE.Vector3(0, landingY, 0);
-    const sunToPanel = new THREE.Vector3().subVectors(centerTarget, sunPos);
-    const beamLength = sunToPanel.length();
+    // Direction vector from sun toward panel center
+    const sunToPanel = new THREE.Vector3().subVectors(panelCenter, sunPos);
     const rayDir = sunToPanel.clone().normalize(); // Points from Sun toward panel
+    const sunVector = rayDir.clone().negate(); // Points from panel toward Sun
 
     // 2. Update Directional Key Light
-    this.keyLight.position.set(sunPos.x * 2.5, sunPos.y * 2.5, sunPos.z * 2.5);
-    this.keyLight.target.position.set(0, landingY, 0);
+    this.keyLight.position.set(sunPos.x * 2.0, sunPos.y * 2.0, sunPos.z * 2.0);
+    this.keyLight.target.position.copy(panelCenter);
     this.keyLight.target.updateMatrixWorld();
     this.keyLight.intensity = Math.max(0.5, 2.8 * Math.pow(cosVal, 0.6));
 
@@ -436,19 +543,12 @@ export class StudioScene {
     const warmFactor = Math.min(1.0, angleDeg / 80);
     this.keyLight.color.setRGB(1.0, 1.0 - warmFactor * 0.15, 1.0 - warmFactor * 0.35);
 
-    // 3. Update Collimated Parallel Incoming Rays (originating from the Sun Orb)
-    const tiltRad = THREE.MathUtils.degToRad(22);
-    const sinTilt = Math.sin(tiltRad);
-    const cosTilt = Math.cos(tiltRad);
-    const panelNormal = new THREE.Vector3(0, cosTilt, sinTilt);
-
+    // 3. Update Collimated Parallel Incoming Rays (landing precisely on the 22° tilted panel aperture)
     if (this.incomingRays) {
       this.incomingRays.forEach(({ line, ox, oz }) => {
-        // Target: Precisely on the 22° tilted solar panel aperture
-        const target = new THREE.Vector3(ox, landingY - oz * sinTilt, oz * cosTilt);
+        const target = this.getPanelWorldPoint(ox, oz);
 
-        // Source: Originates directly inside the glowing 3D Sun Orb!
-        // Distributed proportionally across the sun's radiant core (radius ~0.08m)
+        // Source: Originates directly inside the glowing 3D Sun Orb
         const source = new THREE.Vector3(
           sunPos.x + (ox / 0.50) * 0.08,
           sunPos.y,
@@ -468,66 +568,70 @@ export class StudioScene {
       });
     }
 
-    // Update Volumetric Sunlight Shaft (True Pyramidal Frustum from Sun to Panel Corners)
+    // 4. Update Volumetric Sunlight Shaft (Pyramidal Frustum from Sun Orb to Panel Corners)
     if (this.lightVolume) {
       const posArr = this.lightVolume.geometry.attributes.position.array;
       const sunR = 0.12; // Emitter radius around Sun Orb
 
-      // Top quad around the Sun
-      // 0: Top-Left at Sun
+      // Top quad around Sun
       posArr[0] = sunPos.x - sunR;
       posArr[1] = sunPos.y;
       posArr[2] = sunPos.z - sunR;
-      // 1: Top-Right at Sun
+
       posArr[3] = sunPos.x + sunR;
       posArr[4] = sunPos.y;
       posArr[5] = sunPos.z - sunR;
-      // 2: Bottom-Right at Sun
+
       posArr[6] = sunPos.x + sunR;
       posArr[7] = sunPos.y;
       posArr[8] = sunPos.z + sunR;
-      // 3: Bottom-Left at Sun
+
       posArr[9] = sunPos.x - sunR;
       posArr[10] = sunPos.y;
       posArr[11] = sunPos.z + sunR;
 
-      // Bottom quad at the 4 corners of the 22° tilted solar panel aperture (1.134m x 1.722m)
+      // Bottom quad at 4 corners of 415Wp tilted panel (hw = 0.55m, hl = 0.84m)
       const hw = 0.55;
       const hl = 0.84;
+      const cTL = this.getPanelWorldPoint(-hw, -hl);
+      const cTR = this.getPanelWorldPoint(hw, -hl);
+      const cBR = this.getPanelWorldPoint(hw, hl);
+      const cBL = this.getPanelWorldPoint(-hw, hl);
 
-      // 4: Top-Left (-hw, -hl)
-      posArr[12] = -hw;
-      posArr[13] = landingY - (-hl) * sinTilt;
-      posArr[14] = -hl * cosTilt;
-      // 5: Top-Right (hw, -hl)
-      posArr[15] = hw;
-      posArr[16] = landingY - (-hl) * sinTilt;
-      posArr[17] = -hl * cosTilt;
-      // 6: Bottom-Right (hw, hl)
-      posArr[18] = hw;
-      posArr[19] = landingY - hl * sinTilt;
-      posArr[20] = hl * cosTilt;
-      // 7: Bottom-Left (-hw, hl)
-      posArr[21] = -hw;
-      posArr[22] = landingY - hl * sinTilt;
-      posArr[23] = hl * cosTilt;
+      // 4: Top-Left
+      posArr[12] = cTL.x;
+      posArr[13] = cTL.y;
+      posArr[14] = cTL.z;
+      // 5: Top-Right
+      posArr[15] = cTR.x;
+      posArr[16] = cTR.y;
+      posArr[17] = cTR.z;
+      // 6: Bottom-Right
+      posArr[18] = cBR.x;
+      posArr[19] = cBR.y;
+      posArr[20] = cBR.z;
+      // 7: Bottom-Left
+      posArr[21] = cBL.x;
+      posArr[22] = cBL.y;
+      posArr[23] = cBL.z;
 
       this.lightVolume.geometry.attributes.position.needsUpdate = true;
       this.lightVolume.geometry.computeVertexNormals();
       this.lightVolume.material.opacity = Math.max(0.015, 0.08 * cosVal);
     }
 
-    // 4. Update Fresnel Reflected Rays (Mirror reflection: θ_refl = θ_inc)
+    // 5. Update Fresnel Reflected Rays (θ_refl = θ_inc, bouncing away from front glass)
     const b0 = 0.05;
     const iam = Math.max(0.05, 1.0 - b0 * (1.0 / Math.max(0.1, cosVal) - 1.0));
     const fresnelReflection = Math.min(1.0, Math.max(0.02, 1.0 - iam + Math.pow(sinVal, 5) * 0.8));
 
     if (this.reflectedRays) {
       const reflLength = 2.4;
+      // Mirror reflection: incoming rayDir bounced across panel normal
       const reflDir = rayDir.clone().reflect(panelNormal).normalize();
 
       this.reflectedRays.forEach(({ line, ox, oz }) => {
-        const start = new THREE.Vector3(ox, landingY - oz * sinTilt, oz * cosTilt);
+        const start = this.getPanelWorldPoint(ox, oz);
         const end = new THREE.Vector3().copy(start).addScaledVector(reflDir, reflLength);
 
         const posArr = line.geometry.attributes.position.array;
@@ -539,9 +643,66 @@ export class StudioScene {
         posArr[5] = end.z;
         line.geometry.attributes.position.needsUpdate = true;
 
-        // At grazing angles (>15°), reflection brightness surges!
-        line.material.opacity = angleDeg > 15 ? fresnelReflection * 0.8 : 0.0;
+        // At grazing angles (>10°), reflection brightness surges!
+        line.material.opacity = angleDeg > 10 ? fresnelReflection * 0.8 : 0.0;
       });
+    }
+
+    // 6. Update Normal Vector & AOI CAD Gizmo on Panel
+    if (this.aoiGizmoGroup) {
+      const gLen = 0.52;
+      const normTip = new THREE.Vector3().copy(panelCenter).addScaledVector(panelNormal, gLen);
+      const sunTip = new THREE.Vector3().copy(panelCenter).addScaledVector(sunVector, gLen);
+
+      // Normal arrow line & cone
+      const nPos = this.normalArrowLine.geometry.attributes.position.array;
+      nPos[0] = panelCenter.x;
+      nPos[1] = panelCenter.y;
+      nPos[2] = panelCenter.z;
+      nPos[3] = normTip.x;
+      nPos[4] = normTip.y;
+      nPos[5] = normTip.z;
+      this.normalArrowLine.geometry.attributes.position.needsUpdate = true;
+
+      this.normalCone.position.copy(normTip);
+      this.normalCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), panelNormal);
+
+      // Sun vector line & cone
+      const sPos = this.sunRayLine.geometry.attributes.position.array;
+      sPos[0] = panelCenter.x;
+      sPos[1] = panelCenter.y;
+      sPos[2] = panelCenter.z;
+      sPos[3] = sunTip.x;
+      sPos[4] = sunTip.y;
+      sPos[5] = sunTip.z;
+      this.sunRayLine.geometry.attributes.position.needsUpdate = true;
+
+      this.sunCone.position.copy(sunTip);
+      this.sunCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sunVector);
+
+      // Anchor disc flush with panel surface
+      this.aoiAnchor.position.copy(panelCenter);
+      this.aoiAnchor.rotation.x = tiltRad;
+
+      // Arc between Normal and Sun Vector
+      const arcPos = this.aoiArcLine.geometry.attributes.position.array;
+      const arcRadius = 0.32;
+      const segCount = 24;
+      for (let i = 0; i <= segCount; i++) {
+        const subAngle = (rad * i) / segCount;
+        const arcDir = new THREE.Vector3()
+          .addScaledVector(panelNormal, Math.cos(subAngle))
+          .addScaledVector(westDir, Math.sin(subAngle))
+          .normalize();
+        const pt = new THREE.Vector3().copy(panelCenter).addScaledVector(arcDir, arcRadius);
+        arcPos[i * 3] = pt.x;
+        arcPos[i * 3 + 1] = pt.y;
+        arcPos[i * 3 + 2] = pt.z;
+      }
+      this.aoiArcLine.geometry.attributes.position.needsUpdate = true;
+      this.aoiArcLine.visible = (angleDeg > 2);
+      this.sunRayLine.visible = (angleDeg > 2);
+      this.sunCone.visible = (angleDeg > 2);
     }
 
     return { cosVal, iam, fresnelReflection };

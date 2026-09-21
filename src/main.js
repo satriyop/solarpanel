@@ -85,7 +85,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Function to update physical PV generation based on ASHRAE IAM model
   function updateSolarGeneration(angle) {
     currentSunAngle = angle;
-    sunAngleLabel.textContent = `Angle: ${angle}°`;
+    sunAngleLabel.textContent = angle === 0 ? 'AOI: 0° (Normal 90°)' : `AOI: ${angle}°`;
 
     // 1. Update 3D studio sun position, parallel beam array, and Fresnel reflection rays
     const { cosVal, iam, fresnelReflection } = studio.setSunAngle(angle);
