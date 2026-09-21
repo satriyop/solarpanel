@@ -25,7 +25,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnAutoCycle = document.getElementById('btn-auto-cycle');
   const btnOrbitPan = document.getElementById('btn-orbit-pan');
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
-  const btnToggleGuides = document.getElementById('btn-toggle-guides');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const btnToggle4k = document.getElementById('btn-toggle-4k');
@@ -169,14 +168,6 @@ window.addEventListener('DOMContentLoaded', () => {
     btnToggleLabels.classList.toggle('active', visible);
   });
 
-  // CAD Alignment Guides Toggle
-  btnToggleGuides.addEventListener('click', () => {
-    const visible = !solarPanel.showAlignmentGuides;
-    solarPanel.setAlignmentGuidesVisible(visible);
-    solarPanel.setExplodeProgress(anim.explodeProgress);
-    studio.setIncidentGizmoVisible(visible);
-    btnToggleGuides.classList.toggle('active', visible);
-  });
 
   // Solar Irradiance Simulator Toggle (Sun Orb, Beams, HUD Widget)
   if (btnToggleSun) {

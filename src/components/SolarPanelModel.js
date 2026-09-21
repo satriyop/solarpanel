@@ -36,10 +36,8 @@ export class SolarPanelModel {
       { id: 'jbox', name: '7. Junction Box & MC4 Cables', assembledY: -0.038, explodedY: -0.88 }
     ];
 
-    this.showAlignmentGuides = false;
     this.initTextures();
     this.buildLayers();
-    this.buildAlignmentGuides();
   }
 
   initTextures() {
@@ -614,47 +612,6 @@ export class SolarPanelModel {
   }
 
   /**
-   * Build CAD 4-Corner Vertical Alignment Guide Lines connecting all layers in space.
-   */
-  buildAlignmentGuides() {
-    this.guidesGroup = new THREE.Group();
-    const W = this.panelWidth;
-    const L = this.panelLength;
-    const fw = this.frameWidth;
-
-    const corners = [
-      { x: -W / 2 + fw / 2, z: -L / 2 + fw / 2 },
-      { x: W / 2 - fw / 2, z: -L / 2 + fw / 2 },
-      { x: -W / 2 + fw / 2, z: L / 2 - fw / 2 },
-      { x: W / 2 - fw / 2, z: L / 2 - fw / 2 }
-    ];
-
-    this.guideLines = [];
-    const lineMat = new THREE.LineDashedMaterial({
-      color: 0x0088ff,
-      dashSize: 0.03,
-      gapSize: 0.02,
-      transparent: true,
-      opacity: 0.0
-    });
-
-    corners.forEach((corner) => {
-      const points = [
-        new THREE.Vector3(corner.x, 0.85, corner.z),
-        new THREE.Vector3(corner.x, -0.65, corner.z)
-      ];
-      const geo = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geo, lineMat.clone());
-      line.computeLineDistances();
-      this.guidesGroup.add(line);
-      this.guideLines.push({ line, corner, points });
-    });
-
-    this.guidesGroup.visible = false;
-    this.group.add(this.guidesGroup);
-  }
-
-  /**
    * Set the separation progress between 0.0 (Assembled) and 1.0 (Exploded).
    */
   setExplodeProgress(progress) {
@@ -665,33 +622,6 @@ export class SolarPanelModel {
       layer.object.position.y = targetY;
       layer.currentY = targetY;
     });
-
-    // Update CAD 4-Corner Alignment Guide Lines
-    if (this.guideLines && this.guidesGroup) {
-      const topY = 0.85 * p;
-      const bottomY = -0.65 * p;
-      const opacity = this.showAlignmentGuides ? Math.min(0.65, p * 1.2) : 0.0;
-
-      this.guideLines.forEach(({ line, corner }) => {
-        const positions = line.geometry.attributes.position.array;
-        positions[1] = topY;
-        positions[4] = bottomY;
-        line.geometry.attributes.position.needsUpdate = true;
-        line.computeLineDistances();
-        line.material.opacity = opacity;
-        line.visible = opacity > 0.02;
-      });
-    }
-  }
-
-  /**
-   * Toggle CAD Alignment Guide Lines
-   */
-  setAlignmentGuidesVisible(visible) {
-    this.showAlignmentGuides = visible;
-    if (this.guidesGroup) {
-      this.guidesGroup.visible = visible;
-    }
   }
 
   /**
