@@ -12,6 +12,7 @@ A real-time, photorealistic 3D exploded view diagram of a residential solar pane
   5. **Bottom EVA Film Encapsulant**: Rear protective polymer film with embossed diamond texture and cell matrix indentations.
   6. **Tedlar Backsheet**: Weatherproof barrier (PVF/PET) with realistic matte polymer grain, technical specification metalized label, and 4 CNC ribbon feedthrough slits with flat copper busbar tabs.
   7. **Junction Box & MC4 Leads**: IP68 polycarbonate enclosure with heatsink cooling fins, 4 internal copper terminal blocks, 3 bypass diodes, cable glands, and curved positive/negative leads with MC4 locking connectors.
+  8. **Microinverter & AC Trunk (MLPE)**: Die-cast natural aluminum enclosure with 12 heatsink cooling fins, laser-etched Enphase IQ8+ specification plate, pulsing status LED, DC MC4 input pigtails, AC Q-cable drop, and heavy-duty AC trunk line.
 
 - **Cinematic Camera & Lighting**:
   - Slow, continuous 360-degree orbital camera pan with manual interaction override and smooth damping.
@@ -25,7 +26,8 @@ A real-time, photorealistic 3D exploded view diagram of a residential solar pane
   - Automatic looping cycle and 360° orbital camera panning.
   - 3D screen-space projected annotations with leader lines.
   - Interactive Solar Irradiance simulator with real-time ASHRAE IAM power generation curves.
-  - Layer isolation filter pills (`All`, `Frame`, `Glass`, `Cells`, etc.).
+  - Real-time **Power Flow ⚡** animation visualizing DC-to-AC conversion along cell busbars, junction box, microinverter, and AC trunk line.
+  - Layer isolation filter pills (`All`, `Frame`, `Glass`, `Cells`, `Microinverter`, etc.) with cinematic macro camera zoom.
   - Dark/Light studio theme switcher with native Retina high-DPI rendering.
 
 ## Getting Started
