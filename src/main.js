@@ -3,6 +3,7 @@ import { SolarPanelModel } from './components/SolarPanelModel.js';
 import { AnimationController } from './animation/AnimationController.js';
 import { PowerFlowController } from './components/PowerFlowController.js';
 import { CentralInverterModel } from './components/CentralInverterModel.js';
+import { BatteryStorageModel } from './components/BatteryStorageModel.js';
 
 // Initialize application on DOM content loaded
 window.addEventListener('DOMContentLoaded', () => {
@@ -20,15 +21,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const centralInverter = new CentralInverterModel();
   studio.scene.add(centralInverter.group);
 
-  // 4. Initialize Animation & Motion Controller
+  // 4. Initialize Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)
+  const batteryStorage = new BatteryStorageModel();
+  studio.scene.add(batteryStorage.group);
+
+  // 5. Initialize Animation & Motion Controller
   const anim = new AnimationController(solarPanel, studio, labelsContainer);
   anim.setCentralInverter(centralInverter);
+  anim.setBatteryStorage(batteryStorage);
 
-  // 5. Initialize Electrical Power Flow Controller (DC to AC Conversion)
+  // 6. Initialize Electrical Power Flow Controller (DC to AC Conversion)
   const powerFlow = new PowerFlowController(solarPanel, studio);
   powerFlow.setCentralInverter(centralInverter);
+  powerFlow.setBatteryStorage(batteryStorage);
 
-  // 6. UI Elements
+  // 7. UI Elements
   const btnStartFrame = document.getElementById('btn-start-frame');
   const btnEndFrame = document.getElementById('btn-end-frame');
   const sliderExplode = document.getElementById('slider-explode');
@@ -40,9 +47,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnTogglePower = document.getElementById('btn-toggle-power');
   const btnToggleInverterMode = document.getElementById('btn-toggle-inverter-mode');
   const labelInverterMode = document.getElementById('label-inverter-mode');
+  const btnToggleBattery = document.getElementById('btn-toggle-battery');
   const btnToggleView = document.getElementById('btn-toggle-view');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const pillInverter = document.getElementById('pill-inverter');
+  const pillBattery = document.getElementById('pill-battery');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
   const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
@@ -52,6 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isDarkTheme = true;
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
+  let isBatteryActive = false;
   let currentInverterMode = 'micro'; // 'micro' (rooftop MLPE) or 'central' (wall-mounted string)
   let isUndersideView = false;
   let currentWatts = 410;
@@ -263,6 +273,18 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Home Battery Storage Toggle (10.5kWh LiFePO4 BESS)
+  if (btnToggleBattery) {
+    btnToggleBattery.addEventListener('click', () => {
+      isBatteryActive = !isBatteryActive;
+      btnToggleBattery.classList.toggle('active', isBatteryActive);
+      batteryStorage.setVisible(isBatteryActive);
+      if (pillBattery) {
+        pillBattery.style.display = isBatteryActive ? 'inline-block' : 'none';
+      }
+    });
+  }
+
   // Camera View Toggle (Front Sun-Facing Cells vs Underside MLPE Microinverter & J-Box)
   if (btnToggleView) {
     btnToggleView.addEventListener('click', () => {
@@ -342,7 +364,10 @@ window.addEventListener('DOMContentLoaded', () => {
       pill.classList.add('active');
       const layerId = pill.dataset.layer;
 
-      if (layerId === 'centralInverter') {
+      if (layerId === 'batteryStorage') {
+        solarPanel.focusLayer('all');
+        anim.focusCameraOnBatteryStorage();
+      } else if (layerId === 'centralInverter') {
         solarPanel.focusLayer('all');
         anim.focusCameraOnCentralInverter();
       } else {

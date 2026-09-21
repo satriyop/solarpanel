@@ -175,6 +175,25 @@ export class PowerFlowController {
     }
   }
 
+  setBatteryStorage(batteryStorage) {
+    this.batteryStorage = batteryStorage;
+    if (!batteryStorage) return;
+
+    // Battery charging DC particles along the interconnect conduit
+    this.batteryChargeParticles = [];
+    for (let i = 0; i < 10; i++) {
+      const sprite = new THREE.Sprite(this.dcMat.clone());
+      sprite.scale.set(0.044, 0.044, 1);
+      sprite.visible = (this.isVisible && batteryStorage.isVisible);
+      batteryStorage.group.add(sprite);
+      this.batteryChargeParticles.push({
+        sprite,
+        t: i / 10,
+        speed: 0.30
+      });
+    }
+  }
+
   /**
    * Switch active power flow path between Microinverter (MLPE) and Central Inverter (String)
    */
@@ -220,11 +239,17 @@ export class PowerFlowController {
     if (this.centralAcParticles) {
       this.centralAcParticles.forEach(p => p.sprite.visible = (visible && isCentral));
     }
+    if (this.batteryChargeParticles && this.batteryStorage) {
+      this.batteryChargeParticles.forEach(p => p.sprite.visible = (visible && this.batteryStorage.isVisible));
+    }
 
     if (!visible) {
       this.model.setInverterLedPulse(1.0);
       if (this.centralInverter) {
         this.centralInverter.setLedPulse(1.0);
+      }
+      if (this.batteryStorage) {
+        this.batteryStorage.setLedPulse(1.0);
       }
     }
   }
@@ -340,6 +365,24 @@ export class PowerFlowController {
       const pulseIntensity = 0.6 + 0.4 * Math.sin(this.time * (5.0 * powerFactor));
       this.centralInverter.setLedPulse(pulseIntensity * powerFactor);
       this.centralInverter.updateTelemetry(currentWatts);
+
+      // E. Animate Battery Storage Charging Particles (Inverter to Battery)
+      if (this.batteryStorage && this.batteryStorage.isVisible) {
+        if (this.batteryChargeParticles && this.batteryStorage.conduitCurve) {
+          const pt = new THREE.Vector3();
+          this.batteryChargeParticles.forEach((p) => {
+            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+            this.batteryStorage.conduitCurve.getPoint(p.t, pt);
+            p.sprite.position.copy(pt);
+            p.sprite.visible = this.isVisible;
+            p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * powerFactor;
+          });
+        }
+        const chargePulse = 0.5 + 0.5 * Math.sin(this.time * 4.0 * powerFactor);
+        this.batteryStorage.setLedPulse(chargePulse);
+      } else if (this.batteryChargeParticles) {
+        this.batteryChargeParticles.forEach(p => p.sprite.visible = false);
+      }
     }
   }
 }

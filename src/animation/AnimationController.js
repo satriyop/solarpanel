@@ -399,6 +399,11 @@ export class AnimationController {
         title: 'Central Hybrid String Inverter',
         mat: 'Powder-Coated Die-Cast Aluminum (NEMA 4X / IP66)',
         detail: '5.0kW Grid-Tied Output • Dual MPPT Trackers • 98.4% CEC Efficiency • Integrated Rotary DC Disconnect (NEC 690.12) • High-Voltage Battery Storage Port'
+      },
+      batteryStorage: {
+        title: 'Home Battery Energy Storage System (BESS)',
+        mat: 'Lithium Iron Phosphate (LiFePO4) Cells in NEMA 3R Enclosure',
+        detail: '10.5kWh Usable Capacity • 5.0kW Continuous Output • Integrated BMS with Active Balancing • High-Voltage DC Contactor • UL 9540 Certified'
       }
     };
 
@@ -411,6 +416,10 @@ export class AnimationController {
     this.centralInverter = centralInverter;
   }
 
+  setBatteryStorage(batteryStorage) {
+    this.batteryStorage = batteryStorage;
+  }
+
   /**
    * Cinematic Macro Zoom for the Wall-Mounted Central Hybrid Inverter
    */
@@ -419,6 +428,33 @@ export class AnimationController {
 
     const targetPos = { x: 2.05, y: 0.16, z: 0.02 };
     const camPos = { x: 2.55, y: 0.42, z: 0.92 };
+
+    gsap.to(this.scene.controls.target, {
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
+      duration: duration,
+      ease: 'power3.out'
+    });
+
+    gsap.to(this.scene.camera.position, {
+      x: camPos.x,
+      y: camPos.y,
+      z: camPos.z,
+      duration: duration,
+      ease: 'power3.out',
+      onUpdate: () => this.scene.controls.update()
+    });
+  }
+
+  /**
+   * Cinematic Macro Zoom for Home Battery Storage (BESS)
+   */
+  focusCameraOnBatteryStorage(duration = 1.4) {
+    this.isAutoOrbit = false;
+
+    const targetPos = { x: 2.80, y: 0.15, z: 0.02 };
+    const camPos = { x: 3.25, y: 0.38, z: 0.88 };
 
     gsap.to(this.scene.controls.target, {
       x: targetPos.x,
@@ -461,6 +497,16 @@ export class AnimationController {
       this.centralInverter.group.traverse(child => {
         if (child.isMesh && child.material.visible !== false && child.userData.isCentralInverter) {
           child.userData.parentLayerId = 'centralInverter';
+          meshes.push(child);
+        }
+      });
+    }
+
+    // Also collect Battery Storage meshes if active
+    if (this.batteryStorage && this.batteryStorage.isVisible) {
+      this.batteryStorage.group.traverse(child => {
+        if (child.isMesh && child.material.visible !== false && child.userData.isBatteryStorage) {
+          child.userData.parentLayerId = 'batteryStorage';
           meshes.push(child);
         }
       });

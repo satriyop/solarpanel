@@ -734,3 +734,152 @@ export function createRotarySwitchTexture() {
   return texture;
 }
 
+// 10. Home Battery Energy Storage System (BESS) Rating Plate Texture (512x256)
+export function createBatterySpecPlateTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Brushed aluminum dark finish
+  const grad = ctx.createLinearGradient(0, 0, 512, 256);
+  grad.addColorStop(0, '#334155');
+  grad.addColorStop(0.5, '#1e293b');
+  grad.addColorStop(1, '#0f172a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Border & corner rivets
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(8, 8, 496, 240);
+
+  [[16, 16], [496, 16], [16, 240], [496, 240]].forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#64748b';
+    ctx.fill();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.stroke();
+  });
+
+  // Header Title
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillText('ENERGYPACK 10.5kWh BESS', 28, 44);
+
+  ctx.font = '13px sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Lithium Iron Phosphate (LiFePO4) Home Energy Storage Unit', 28, 66);
+
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(28, 78);
+  ctx.lineTo(484, 78);
+  ctx.stroke();
+
+  // Ratings
+  ctx.font = 'bold 14px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText('ELECTRICAL SPECIFICATIONS:', 28, 102);
+  ctx.font = '13px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText('Capacity: 10.5 kWh | Power: 5.0kW Cont. / 7.0kW Peak', 28, 122);
+  ctx.fillText('Nominal Voltage: 400Vdc | Operating: 350 - 450Vdc', 28, 144);
+  ctx.fillText('Max Charge / Discharge Current: 25.0A Continuous', 28, 166);
+
+  // Safety & Efficiency
+  ctx.font = 'bold 12.5px sans-serif';
+  ctx.fillStyle = '#10b981';
+  ctx.fillText('ROUND-TRIP EFFICIENCY: 90.5% • NEMA TYPE 3R OUTDOOR', 28, 202);
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('UL 9540 / UL 1973 / UN 38.3 / NFPA 855 Fire Safety Compliant', 28, 224);
+
+  // QR Code Graphic
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(410, 95, 68, 68);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(416, 101, 56, 56);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(422, 107, 18, 18);
+  ctx.fillRect(448, 107, 16, 16);
+  ctx.fillRect(422, 133, 16, 16);
+  ctx.fillRect(444, 129, 12, 12);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+// 11. Battery Management System (BMS) PCB Circuit Board Texture (512x256)
+export function createBatteryBmsTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Matte dark green solder mask PCB
+  ctx.fillStyle = '#064e3b';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Gold-plated copper routing traces
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 1.5;
+  for (let i = 20; i < 490; i += 24) {
+    ctx.beginPath();
+    ctx.moveTo(i, 20);
+    ctx.lineTo(i + 12, 60);
+    ctx.lineTo(i + 12, 190);
+    ctx.lineTo(i + 24, 230);
+    ctx.stroke();
+  }
+
+  // Microcontroller QFP Chip (Central Processor)
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(200, 80, 80, 80);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(200, 80, 80, 80);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ARM CORTEX', 240, 116);
+  ctx.fillText('BMS MCU', 240, 132);
+
+  // Surface Mount Balance Resistors & FETs
+  ctx.fillStyle = '#1e293b';
+  for (let c = 0; c < 14; c++) {
+    const rx = 30 + (c % 7) * 48;
+    const ry = c < 7 ? 40 : 180;
+    ctx.fillRect(rx, ry, 28, 14);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(rx - 2, ry + 2, 3, 10);
+    ctx.fillRect(rx + 27, ry + 2, 3, 10);
+    ctx.fillStyle = '#1e293b';
+  }
+
+  // Multi-pin cell balance harness header
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(320, 20, 160, 24);
+  ctx.fillStyle = '#d97706';
+  for (let p = 0; p < 14; p++) {
+    ctx.fillRect(326 + p * 11, 24, 6, 16);
+  }
+
+  // Status LED indicators
+  [[120, 120, '#10b981'], [140, 120, '#38bdf8'], [160, 120, '#f59e0b']].forEach(([lx, ly, col]) => {
+    ctx.beginPath();
+    ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.fill();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+
