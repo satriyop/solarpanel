@@ -30,10 +30,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnToggle4k = document.getElementById('btn-toggle-4k');
   const layerPills = document.querySelectorAll('.layer-pill');
 
-  let isAutoCycleRunning = false;
+  let isAutoCycleRunning = true;
   let autoCycleTimer = null;
   let isDarkTheme = false;
-  let is4kEnabled = false;
+  let is4kEnabled = true;
 
   let currentSunAngle = 0;
 
@@ -224,6 +224,15 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize at 0° High Noon
   updateSolarGeneration(0);
 
+  // Set default visual presets: Light Studio & 4K Super Resolution
+  studio.setStudioTheme(false);
+  studio.setSuperResolution(true);
+
+  // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel
+  autoCycleTimer = setTimeout(() => {
+    runCycleStep();
+  }, 1200);
+
   // Interactive 3D Hover Tooltip Card
   const hoverTooltip = document.getElementById('hover-tooltip');
   if (hoverTooltip) {
@@ -233,6 +242,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Layer Filter Pills with Cinematic Macro Camera Fly-In
   layerPills.forEach((pill) => {
     pill.addEventListener('click', () => {
+      stopAutoCycle();
       layerPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const layerId = pill.dataset.layer;
