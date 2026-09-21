@@ -185,4 +185,205 @@ export class AnimationController {
       }
     });
   }
+
+  /**
+   * Cinematic Macro Zoom: Smoothly fly the camera close to an individual layer for micro-inspection.
+   */
+  focusCameraOnLayer(layerId, duration = 1.3) {
+    this.focusedLayerId = layerId;
+
+    if (!layerId || layerId === 'all') {
+      // Return to overview isometric angle
+      this.isAutoOrbit = true;
+      gsap.to(this.scene.controls.target, { x: 0, y: 0, z: 0, duration: duration, ease: 'power2.inOut' });
+      gsap.to(this.scene.camera.position, {
+        x: 3.0,
+        y: 2.6,
+        z: 3.4,
+        duration: duration,
+        ease: 'power2.inOut',
+        onUpdate: () => this.scene.controls.update()
+      });
+      return;
+    }
+
+    // Pause orbit during micro-macro inspection
+    this.isAutoOrbit = false;
+
+    // Find layer
+    const layer = this.model.layers.find(l => l.id === layerId);
+    if (!layer) return;
+
+    const layerY = layer.currentY;
+
+    // Specific cinematic camera angles & target positions for each layer
+    let targetPos = { x: 0, y: layerY, z: 0 };
+    let camPos = { x: 1.2, y: layerY + 0.6, z: 1.2 };
+
+    switch (layerId) {
+      case 'frame':
+        // Close-up of 45° corner miter joint & CNC water weep slot
+        targetPos = { x: -this.model.panelWidth / 2 + 0.04, y: layerY, z: -this.model.panelLength / 2 + 0.08 };
+        camPos = { x: -this.model.panelWidth / 2 - 0.22, y: layerY + 0.22, z: -this.model.panelLength / 2 - 0.15 };
+        break;
+
+      case 'glass':
+        // Grazing angle looking across emerald-cyan safety edge and AR sheen
+        targetPos = { x: this.model.panelWidth / 2 - 0.08, y: layerY, z: 0.2 };
+        camPos = { x: this.model.panelWidth / 2 + 0.38, y: layerY + 0.12, z: 0.1 };
+        break;
+
+      case 'topEva':
+        // Macro view looking down at embossed diamond waffle micro-texture
+        targetPos = { x: 0, y: layerY, z: 0.1 };
+        camPos = { x: 0.22, y: layerY + 0.32, z: 0.32 };
+        break;
+
+      case 'cells':
+        // Macro view directly over silver multi-busbar and solder meniscus
+        targetPos = { x: 0, y: layerY, z: 0 };
+        camPos = { x: 0.18, y: layerY + 0.24, z: 0.24 };
+        break;
+
+      case 'bottomEva':
+        // Macro view of rear cushioning film
+        targetPos = { x: 0, y: layerY, z: -0.1 };
+        camPos = { x: 0.22, y: layerY + 0.32, z: 0.15 };
+        break;
+
+      case 'backsheet':
+        // Macro view of technical rating plate and copper ribbon slits
+        targetPos = { x: -0.15, y: layerY, z: 0.45 };
+        camPos = { x: -0.15, y: layerY + 0.42, z: 0.72 };
+        break;
+
+      case 'jbox':
+        // Close-up underneath of IP68 junction box, bypass diodes, and MC4 leads
+        targetPos = { x: 0, y: layerY - 0.02, z: -0.45 };
+        camPos = { x: 0.32, y: layerY - 0.26, z: -0.22 };
+        break;
+    }
+
+    gsap.to(this.scene.controls.target, {
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
+      duration: duration,
+      ease: 'power3.out'
+    });
+
+    gsap.to(this.scene.camera.position, {
+      x: camPos.x,
+      y: camPos.y,
+      z: camPos.z,
+      duration: duration,
+      ease: 'power3.out',
+      onUpdate: () => this.scene.controls.update()
+    });
+  }
+
+  /**
+   * Setup interactive 3D raycasting and mouse hover tooltips.
+   */
+  setupHoverTooltips(tooltipElement) {
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    this.tooltipEl = tooltipElement;
+
+    // Technical specifications database for hover cards
+    this.layerSpecs = {
+      frame: {
+        title: '1. Extruded Aluminum Frame',
+        mat: 'Anodized 6063-T5 Aerospace Alloy',
+        detail: '35mm profile • 45° miter joints • CNC rainwater drainage weep slots • 2400Pa wind / 5400Pa snow load rating'
+      },
+      glass: {
+        title: '2. Tempered Solar Glass',
+        mat: '3.2mm Low-Iron High-Transmission Glass',
+        detail: '94.5% Solar Transmittance • Anti-Reflective (AR) SiO2 Coating • Emerald-cyan polished safety bevels • Hail Class 4'
+      },
+      topEva: {
+        title: '3. Top EVA Encapsulant Film',
+        mat: 'Ethylene Vinyl Acetate Copolymer Sheet',
+        detail: 'Thickness: 0.45mm • Embossed diamond waffle pattern for bubble-free vacuum evacuation • 85% gel content'
+      },
+      cells: {
+        title: '4. Silicon Solar Cells & Busbars',
+        mat: 'Monocrystalline Silicon (M6 166mm Wafer)',
+        detail: '60-cell matrix • 5 Multi-Busbars (MBB) • Fine screen-printed fingers • 21.4% cell efficiency • Micro-pyramid texture'
+      },
+      bottomEva: {
+        title: '5. Bottom EVA Encapsulant Film',
+        mat: 'Rear Cushioning Polymer Film',
+        detail: 'High dielectric isolation • Moisture barrier • High PID & UV resistance • Bonds cells firmly to backsheet'
+      },
+      backsheet: {
+        title: '6. Tedlar Composite Backsheet',
+        mat: 'TPT (Tedlar PVF / PET / Primer Multi-layer)',
+        detail: '1500V DC breakdown rating • 4 precision CNC ribbon slits • Metalized technical specifications & UL rating plate'
+      },
+      jbox: {
+        title: '7. Junction Box & MC4 Leads',
+        mat: 'Flame-Retardant Polycarbonate (IP68)',
+        detail: '3x Schottky bypass diodes • Heat-dissipating cooling fins • 4mm² UV-resistant double-insulated cables with MC4 plugs'
+      }
+    };
+
+    const dom = this.scene.renderer.domElement;
+    dom.addEventListener('pointermove', (e) => this.onPointerMove(e));
+    dom.addEventListener('pointerleave', () => this.hideTooltip());
+  }
+
+  onPointerMove(e) {
+    const rect = this.scene.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.scene.camera);
+
+    // Collect all layer meshes
+    const meshes = [];
+    this.model.layers.forEach(layer => {
+      layer.object.traverse(child => {
+        if (child.isMesh && child.material.visible !== false) {
+          child.userData.parentLayerId = layer.id;
+          meshes.push(child);
+        }
+      });
+    });
+
+    const intersects = this.raycaster.intersectObjects(meshes, false);
+
+    if (intersects.length > 0) {
+      const hitLayerId = intersects[0].object.userData.parentLayerId;
+      const spec = this.layerSpecs[hitLayerId];
+
+      if (spec && this.tooltipEl) {
+        this.tooltipEl.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-dot"></span>
+            <strong>${spec.title}</strong>
+          </div>
+          <div class="tooltip-mat">${spec.mat}</div>
+          <div class="tooltip-desc">${spec.detail}</div>
+        `;
+
+        // Position tooltip smoothly near cursor
+        const left = Math.min(window.innerWidth - 320, e.clientX + 16);
+        const top = Math.min(window.innerHeight - 120, e.clientY + 16);
+        this.tooltipEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        this.tooltipEl.style.opacity = '1';
+        this.tooltipEl.style.pointerEvents = 'none';
+        return;
+      }
+    }
+
+    this.hideTooltip();
+  }
+
+  hideTooltip() {
+    if (this.tooltipEl) {
+      this.tooltipEl.style.opacity = '0';
+    }
+  }
 }

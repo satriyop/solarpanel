@@ -153,13 +153,50 @@ window.addEventListener('DOMContentLoaded', () => {
     studio.setSuperResolution(is4kEnabled);
   });
 
-  // Layer Filter Pills
+  // Sun Angle & Real-Time Power Generation Simulator
+  const sliderSunAngle = document.getElementById('slider-sun-angle');
+  const sunWattsVal = document.getElementById('sun-watts-val');
+  const powerGaugeFill = document.getElementById('power-gauge-fill');
+  const sunAngleLabel = document.getElementById('sun-angle-label');
+  const sunImpVal = document.getElementById('sun-imp-val');
+
+  if (sliderSunAngle) {
+    sliderSunAngle.addEventListener('input', (e) => {
+      const angle = parseFloat(e.target.value);
+      sunAngleLabel.textContent = `Angle: ${angle}°`;
+
+      // Update 3D studio sun position and get cosine incident factor
+      const cosVal = studio.setSunAngle(angle);
+
+      // Real-time PV power calculation: P = 410W * cos(angle)
+      const watts = Math.round(410 * Math.max(0, cosVal));
+      const imp = (11.5 * Math.max(0, cosVal)).toFixed(1);
+      const pct = Math.round((watts / 410) * 100);
+
+      sunWattsVal.textContent = watts;
+      sunImpVal.textContent = `Imp: ${imp}A`;
+      powerGaugeFill.style.width = `${pct}%`;
+    });
+  }
+
+  // Interactive 3D Hover Tooltip Card
+  const hoverTooltip = document.getElementById('hover-tooltip');
+  if (hoverTooltip) {
+    anim.setupHoverTooltips(hoverTooltip);
+  }
+
+  // Layer Filter Pills with Cinematic Macro Camera Fly-In
   layerPills.forEach((pill) => {
     pill.addEventListener('click', () => {
       layerPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const layerId = pill.dataset.layer;
+
+      // 1. Isolate layer opacity
       solarPanel.focusLayer(layerId);
+
+      // 2. Cinematic Macro Camera Zoom: Fly right up to the component
+      anim.focusCameraOnLayer(layerId);
     });
   });
 

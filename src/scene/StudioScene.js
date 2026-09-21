@@ -234,6 +234,33 @@ export class StudioScene {
     this.renderer.setPixelRatio(dpr);
   }
 
+  /**
+   * Set Sun Zenith Angle (0° = Direct Overhead High Noon, 80° = Low Grazing Sunset)
+   * Sweeps key light across the panel and adjusts light color temperature and shadow length.
+   */
+  setSunAngle(angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    const cosVal = Math.cos(rad);
+    const sinVal = Math.sin(rad);
+
+    const radius = 9.0;
+    const x = radius * sinVal;
+    const y = Math.max(1.5, radius * cosVal);
+    const z = 3.5 * cosVal + 1.0;
+
+    this.keyLight.position.set(x, y, z);
+    this.keyLight.intensity = Math.max(0.4, 2.6 * Math.pow(cosVal, 0.6));
+
+    // Dynamic color temperature: Crisp 6000K white -> Warm 3200K sunset gold
+    const warmFactor = Math.min(1.0, angleDeg / 80);
+    const r = 1.0;
+    const g = 1.0 - warmFactor * 0.15;
+    const b = 1.0 - warmFactor * 0.35;
+    this.keyLight.color.setRGB(r, g, b);
+
+    return cosVal;
+  }
+
   render() {
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
