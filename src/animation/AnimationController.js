@@ -21,9 +21,9 @@ export class AnimationController {
     this.labelsVisible = true;
 
     // Camera initial orbit parameters
-    this.cameraRadius = 4.8;
-    this.cameraHeight = 2.4;
-    this.cameraAngle = Math.PI / 4; // Start at 45° isometric angle
+    this.cameraRadius = 4.4;
+    this.cameraHeight = 2.1;
+    this.cameraAngle = Math.PI * 0.27; // Start at ~48° isometric angle framing the Sun from start
 
     this.initLabels();
     this.setupInteractions();
@@ -137,8 +137,8 @@ export class AnimationController {
       this.scene.camera.position.x = x;
       this.scene.camera.position.z = z;
       this.scene.camera.position.y = this.cameraHeight;
-      this.scene.camera.lookAt(0, 0, 0);
-      this.scene.controls.target.set(0, 0, 0);
+      this.scene.camera.lookAt(0, 0.15, 0);
+      this.scene.controls.target.set(0, 0.15, 0);
     } else {
       // Sync angle with user orbital control
       this.cameraAngle = Math.atan2(this.scene.camera.position.z, this.scene.camera.position.x);
@@ -195,10 +195,10 @@ export class AnimationController {
     if (!layerId || layerId === 'all') {
       // Return to overview isometric angle
       this.isAutoOrbit = true;
-      gsap.to(this.scene.controls.target, { x: 0, y: 0, z: 0, duration: duration, ease: 'power2.inOut' });
+      gsap.to(this.scene.controls.target, { x: 0, y: 0.15, z: 0, duration: duration, ease: 'power2.inOut' });
       gsap.to(this.scene.camera.position, {
-        x: 3.0,
-        y: 2.6,
+        x: 2.6,
+        y: 2.1,
         z: 3.4,
         duration: duration,
         ease: 'power2.inOut',

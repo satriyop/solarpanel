@@ -52,11 +52,11 @@ export class StudioScene {
   }
 
   initCamera() {
-    // 40° FOV gives a sleek isometric-like telephoto engineering diagram look
-    this.camera = new THREE.PerspectiveCamera(40, this.width / this.height, 0.1, 100);
-    // Isometric angle: elevated 35°, angled 45°
-    this.camera.position.set(3.0, 2.6, 3.4);
-    this.camera.lookAt(0, 0, 0);
+    // 46° FOV gives optimal framing capturing both the 3D Sun in the sky and the solar panel
+    this.camera = new THREE.PerspectiveCamera(46, this.width / this.height, 0.1, 100);
+    // Isometric studio framing: elevated, angled 48°
+    this.camera.position.set(2.6, 2.1, 3.4);
+    this.camera.lookAt(0, 0.15, 0);
   }
 
   initControls() {
@@ -65,7 +65,7 @@ export class StudioScene {
     this.controls.dampingFactor = 0.05;
     this.controls.maxDistance = 8.5;
     this.controls.minDistance = 1.5;
-    this.controls.target.set(0, 0, 0);
+    this.controls.target.set(0, 0.15, 0);
     this.controls.update();
   }
 
@@ -287,9 +287,25 @@ export class StudioScene {
   }
 
   /**
+   * Calculate 3D position of Sun in the visible sky dome for any zenith angle (0° to 80°).
+   * Framed to be prominently visible in the upper sky from the start (angle 0°)
+   * and smoothly traverse across the celestial arc down towards the sunset horizon.
+   */
+  calculateSunPosition(angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    const sinVal = Math.sin(rad);
+    // At 0° (High Noon): Sun sits at (-0.35, 2.22, -1.25) directly in the upper sky above the panel
+    // At 80° (Sunset): Sun sits at (-2.40, 0.65, -1.55) near the sunset horizon
+    const x = -0.35 - 2.05 * sinVal;
+    const y = 2.10 * Math.cos(rad * 0.95) + 0.12;
+    const z = -1.25 - 0.35 * sinVal;
+    return new THREE.Vector3(x, y, z);
+  }
+
+  /**
    * Initialize Physically-Accurate Sun Visualizer:
    * 1. Celestial Arc Trajectory in sky
-   * 2. Glowing Sun Orb with corona halo
+   * 2. Glowing Sun Orb with corona halo and radiant lens flare
    * 3. Collimated Parallel Sunbeam Array (spanning full 1.0m x 1.7m rectangular module aperture)
    * 4. Fresnel Reflected Specular Rays (physically illustrating grazing reflection losses)
    * 5. Normal Vector & Incident Angle (θ) CAD Gizmo on panel
@@ -298,18 +314,12 @@ export class StudioScene {
     this.sunGroup = new THREE.Group();
     this.scene.add(this.sunGroup);
 
-    const R = 3.6; // Celestial dome visual radius
     this.sunTargetY = 0.02; // Dynamically tracks top layer
 
     // 1. Celestial Arc Path (0° to 80°)
     const arcPoints = [];
     for (let deg = 0; deg <= 80; deg += 2) {
-      const rad = (deg * Math.PI) / 180;
-      arcPoints.push(new THREE.Vector3(
-        R * Math.sin(rad),
-        R * Math.cos(rad) + 0.3,
-        (R * 0.35) * Math.cos(rad)
-      ));
+      arcPoints.push(this.calculateSunPosition(deg));
     }
     const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPoints);
     const arcMat = new THREE.LineDashedMaterial({
@@ -317,38 +327,60 @@ export class StudioScene {
       dashSize: 0.06,
       gapSize: 0.04,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.65
     });
     this.sunArc = new THREE.Line(arcGeo, arcMat);
     this.sunArc.computeLineDistances();
     this.sunGroup.add(this.sunArc);
 
-    // 2. Glowing 3D Sun Orb (White core + amber corona halo)
+    // 2. Glowing 3D Sun Orb (White core + golden corona halo + radiant glare disc)
     this.sunOrb = new THREE.Group();
 
-    const coreGeo = new THREE.SphereGeometry(0.12, 20, 20);
+    const coreGeo = new THREE.SphereGeometry(0.18, 24, 24);
     const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     this.sunOrb.add(coreMesh);
 
-    const coronaGeo = new THREE.SphereGeometry(0.24, 20, 20);
+    const coronaGeo = new THREE.SphereGeometry(0.32, 24, 24);
     const coronaMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
       transparent: true,
-      opacity: 0.55
+      opacity: 0.65
     });
-    const coronaMesh = new THREE.Mesh(coronaGeo, coronaMat);
-    this.sunOrb.add(coronaMesh);
+    this.coronaMesh = new THREE.Mesh(coronaGeo, coronaMat);
+    this.sunOrb.add(this.coronaMesh);
 
-    const ringGeo = new THREE.RingGeometry(0.24, 0.48, 32);
+    const ringGeo = new THREE.RingGeometry(0.32, 0.68, 36);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xfbbf24,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.45,
       side: THREE.DoubleSide
     });
     this.sunRing = new THREE.Mesh(ringGeo, ringMat);
     this.sunOrb.add(this.sunRing);
+
+    // Soft radiant lens flare billboard disc
+    const flareCanvas = document.createElement('canvas');
+    flareCanvas.width = 256;
+    flareCanvas.height = 256;
+    const fctx = flareCanvas.getContext('2d');
+    const fGrad = fctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    fGrad.addColorStop(0, 'rgba(254, 240, 138, 0.55)');
+    fGrad.addColorStop(0.3, 'rgba(245, 158, 11, 0.25)');
+    fGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+    fctx.fillStyle = fGrad;
+    fctx.fillRect(0, 0, 256, 256);
+    const flareTex = new THREE.CanvasTexture(flareCanvas);
+    const flareMat = new THREE.MeshBasicMaterial({
+      map: flareTex,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    this.sunFlare = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), flareMat);
+    this.sunOrb.add(this.sunFlare);
 
     this.sunGroup.add(this.sunOrb);
 
@@ -523,57 +555,55 @@ export class StudioScene {
     const cosVal = Math.cos(rad);
     const sinVal = Math.sin(rad);
 
-    // 1. Update Key Directional Light
-    const lightRadius = 9.0;
-    const lx = lightRadius * sinVal;
-    const ly = Math.max(1.5, lightRadius * cosVal);
-    const lz = 3.5 * cosVal + 1.0;
-    this.keyLight.position.set(lx, ly, lz);
-    this.keyLight.intensity = Math.max(0.4, 2.6 * Math.pow(cosVal, 0.6));
+    // 1. Position 3D Sun Orb in the sky along the celestial arc
+    const sunPos = this.calculateSunPosition(angleDeg);
+    if (this.sunOrb) {
+      this.sunOrb.position.copy(sunPos);
+      if (this.sunRing) {
+        this.sunRing.lookAt(this.camera.position);
+      }
+      if (this.sunFlare) {
+        this.sunFlare.lookAt(this.camera.position);
+      }
+    }
+
+    // Direction vector from sun towards panel center
+    const landingY = this.sunTargetY;
+    const centerTarget = new THREE.Vector3(0, landingY, 0);
+    const sunToPanel = new THREE.Vector3().subVectors(centerTarget, sunPos);
+    const beamLength = sunToPanel.length();
+    const rayDir = sunToPanel.clone().normalize(); // Points from Sun toward panel
+
+    // 2. Update Directional Key Light
+    this.keyLight.position.set(sunPos.x * 2.5, sunPos.y * 2.5, sunPos.z * 2.5);
+    this.keyLight.target.position.set(0, landingY, 0);
+    this.keyLight.target.updateMatrixWorld();
+    this.keyLight.intensity = Math.max(0.5, 2.8 * Math.pow(cosVal, 0.6));
 
     // Dynamic light color: Crisp 6000K daylight -> Warm 3200K sunset gold
     const warmFactor = Math.min(1.0, angleDeg / 80);
     this.keyLight.color.setRGB(1.0, 1.0 - warmFactor * 0.15, 1.0 - warmFactor * 0.35);
 
-    // 2. Position 3D Sun Orb in the sky
-    const R = 3.6;
-    const sunX = R * sinVal;
-    const sunY = R * cosVal + 0.3;
-    const sunZ = (R * 0.35) * cosVal;
-
-    if (this.sunOrb) {
-      this.sunOrb.position.set(sunX, sunY, sunZ);
-      if (this.sunRing) {
-        this.sunRing.lookAt(this.camera.position);
-      }
-    }
-
-    // 3. Update Collimated Parallel Incoming Rays (Targeting full rectangular panel)
-    const landingY = this.sunTargetY;
-    const beamLength = 3.2;
-    const rayDirX = -sinVal;
-    const rayDirY = -cosVal;
-    const rayDirZ = -(0.35 * cosVal);
-
+    // 3. Update Collimated Parallel Incoming Rays (originating from the Sun Orb)
     if (this.incomingRays) {
       this.incomingRays.forEach(({ line, ox, oz }) => {
-        const start = new THREE.Vector3(
-          ox - rayDirX * beamLength,
-          landingY - rayDirY * beamLength,
-          oz - rayDirZ * beamLength
+        const target = new THREE.Vector3(ox, landingY, oz);
+        const source = new THREE.Vector3(
+          target.x - rayDir.x * beamLength,
+          target.y - rayDir.y * beamLength,
+          target.z - rayDir.z * beamLength
         );
-        const end = new THREE.Vector3(ox, landingY, oz);
 
         const posArr = line.geometry.attributes.position.array;
-        posArr[0] = start.x;
-        posArr[1] = start.y;
-        posArr[2] = start.z;
-        posArr[3] = end.x;
-        posArr[4] = end.y;
-        posArr[5] = end.z;
+        posArr[0] = source.x;
+        posArr[1] = source.y;
+        posArr[2] = source.z;
+        posArr[3] = target.x;
+        posArr[4] = target.y;
+        posArr[5] = target.z;
         line.geometry.attributes.position.needsUpdate = true;
         line.computeLineDistances();
-        line.material.opacity = Math.max(0.12, 0.65 * cosVal);
+        line.material.opacity = Math.max(0.20, 0.75 * cosVal);
       });
     }
 
@@ -585,23 +615,20 @@ export class StudioScene {
     }
 
     // 4. Update Fresnel Reflected Rays (Mirror reflection: θ_refl = θ_inc)
-    // Physical Fresnel reflection increases exponentially beyond 55°
     const b0 = 0.05;
     const iam = Math.max(0.05, 1.0 - b0 * (1.0 / Math.max(0.1, cosVal) - 1.0));
     const fresnelReflection = Math.min(1.0, Math.max(0.02, 1.0 - iam + Math.pow(sinVal, 5) * 0.8));
 
     if (this.reflectedRays) {
       const reflLength = 2.4;
-      const reflDirX = -rayDirX; // Bounces off in opposite X
-      const reflDirY = -rayDirY; // Upward into sky
-      const reflDirZ = rayDirZ;
+      const reflDir = new THREE.Vector3(rayDir.x, -rayDir.y, rayDir.z).normalize();
 
       this.reflectedRays.forEach(({ line, ox, oz }) => {
         const start = new THREE.Vector3(ox, landingY, oz);
         const end = new THREE.Vector3(
-          ox + reflDirX * reflLength,
-          landingY + reflDirY * reflLength,
-          oz + reflDirZ * reflLength
+          ox + reflDir.x * reflLength,
+          landingY + reflDir.y * reflLength,
+          oz + reflDir.z * reflLength
         );
 
         const posArr = line.geometry.attributes.position.array;
@@ -613,25 +640,28 @@ export class StudioScene {
         posArr[5] = end.z;
         line.geometry.attributes.position.needsUpdate = true;
 
-        // At grazing angles (>55°), reflection brightness surges!
-        line.material.opacity = angleDeg > 20 ? fresnelReflection * 0.75 : 0.0;
+        // At grazing angles (>15°), reflection brightness surges!
+        line.material.opacity = angleDeg > 15 ? fresnelReflection * 0.8 : 0.0;
       });
     }
 
-    // 5. Update Incident Ray Line on Gizmo
+    // 5. Update Incident Ray Line on Gizmo (CAD mode)
     if (this.incRayLine && this.incRayGeo) {
       const rayLen = 0.70;
-      const rayTipX = rayLen * sinVal;
-      const rayTipY = rayLen * cosVal;
       const posArr = this.incRayGeo.attributes.position.array;
-      posArr[3] = rayTipX;
-      posArr[4] = rayTipY;
-      posArr[5] = 0;
+      // Points toward incoming light source: -rayDir
+      posArr[3] = -rayDir.x * rayLen;
+      posArr[4] = -rayDir.y * rayLen;
+      posArr[5] = -rayDir.z * rayLen;
       this.incRayGeo.attributes.position.needsUpdate = true;
 
       if (this.incRayArrow) {
-        this.incRayArrow.position.set(rayTipX, rayTipY, 0);
-        this.incRayArrow.rotation.z = -rad;
+        this.incRayArrow.position.set(-rayDir.x * rayLen, -rayDir.y * rayLen, -rayDir.z * rayLen);
+        this.incRayArrow.lookAt(
+          this.incRayArrow.position.x - rayDir.x,
+          this.incRayArrow.position.y - rayDir.y,
+          this.incRayArrow.position.z - rayDir.z
+        );
       }
     }
 
@@ -644,25 +674,22 @@ export class StudioScene {
         this.arcLine.visible = true;
         if (this.thetaBadge) this.thetaBadge.sprite.visible = true;
         const arcRadius = 0.38;
+        const norm = new THREE.Vector3(0, 1, 0);
+        const sunDirVec = new THREE.Vector3(-rayDir.x, -rayDir.y, -rayDir.z).normalize();
         const pos = this.arcGeo.attributes.position.array;
         for (let i = 0; i <= this.ARC_SEGMENTS; i++) {
           const t = i / this.ARC_SEGMENTS;
-          const curA = t * rad;
-          pos[i * 3] = arcRadius * Math.sin(curA);
-          pos[i * 3 + 1] = arcRadius * Math.cos(curA);
-          pos[i * 3 + 2] = 0;
+          const pt = new THREE.Vector3().copy(norm).lerp(sunDirVec, t).normalize().multiplyScalar(arcRadius);
+          pos[i * 3] = pt.x;
+          pos[i * 3 + 1] = pt.y;
+          pos[i * 3 + 2] = pt.z;
         }
         this.arcGeo.attributes.position.needsUpdate = true;
         this.arcLine.computeLineDistances();
 
         if (this.thetaBadge) {
-          const midA = rad * 0.5;
-          const badgeR = 0.52;
-          this.thetaBadge.sprite.position.set(
-            badgeR * Math.sin(midA),
-            badgeR * Math.cos(midA),
-            0
-          );
+          const midPt = new THREE.Vector3().copy(norm).lerp(sunDirVec, 0.5).normalize().multiplyScalar(0.52);
+          this.thetaBadge.sprite.position.copy(midPt);
           this.thetaBadge.updateText(`θ = ${Math.round(angleDeg)}°`);
         }
       }
@@ -699,6 +726,9 @@ export class StudioScene {
   render() {
     if (this.sunRing) {
       this.sunRing.lookAt(this.camera.position);
+    }
+    if (this.sunFlare) {
+      this.sunFlare.lookAt(this.camera.position);
     }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
