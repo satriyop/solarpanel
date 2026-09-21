@@ -24,7 +24,7 @@ export class CentralInverterModel {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'CentralInverter';
-    this.group.position.set(2.05, 0.2, -0.2); // Positioned elegantly on equipment wall to the right of panel
+    this.group.position.set(1.95, 0.2, -0.2); // Positioned elegantly on equipment wall with NEC clearance
 
     this.isVisible = false;
     this.group.visible = false;
@@ -80,8 +80,8 @@ export class CentralInverterModel {
     });
     this.fadeMaterials.push(emtConduitMat);
 
-    // 2. Equipment Mounting Backer Board (Architectural Wall Plate)
-    const wallBoardGeo = new THREE.BoxGeometry(0.88, 1.12, 0.02);
+    // 2. Equipment Mounting Backer Board (Architectural Wall Plate with 18cm NEC clearance)
+    const wallBoardGeo = new THREE.BoxGeometry(0.76, 1.12, 0.02);
     const wallBoardMat = new THREE.MeshStandardMaterial({
       color: 0x181c24, // Dark engineering studio equipment backer
       roughness: 0.85,
@@ -89,7 +89,7 @@ export class CentralInverterModel {
     });
     this.fadeMaterials.push(wallBoardMat);
     const wallBoard = new THREE.Mesh(wallBoardGeo, wallBoardMat);
-    wallBoard.position.set(0, 0, -0.11);
+    wallBoard.position.set(0, 0, -0.10);
     wallBoard.receiveShadow = true;
     wallBoard.userData.isCentralInverter = true;
     this.group.add(wallBoard);
@@ -99,12 +99,12 @@ export class CentralInverterModel {
     const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
     this.fadeMaterials.push(boltMat);
     [
-      [-0.4, 0.52], [0.4, 0.52],
-      [-0.4, -0.52], [0.4, -0.52]
+      [-0.34, 0.52], [0.34, 0.52],
+      [-0.34, -0.52], [0.34, -0.52]
     ].forEach(([bx, by]) => {
       const bolt = new THREE.Mesh(boltGeo, boltMat);
       bolt.rotation.x = Math.PI / 2;
-      bolt.position.set(bx, by, -0.095);
+      bolt.position.set(bx, by, -0.088);
       this.group.add(bolt);
     });
 
@@ -296,7 +296,7 @@ export class CentralInverterModel {
   initRooftopTransitionBox(bracketMat, darkMat, brassMat) {
     this.soladeckGroup = new THREE.Group();
     // Positioned right at the 22° tilted module right edge in local inverter space
-    this.soladeckGroup.position.set(-1.51, -0.095, -0.167);
+    this.soladeckGroup.position.set(-1.41, -0.095, -0.167);
     this.soladeckGroup.rotation.x = 22 * (Math.PI / 180);
 
     // 1. Galvanized Roof Flashing Plate (tucks under roof shingles)
@@ -378,6 +378,11 @@ export class CentralInverterModel {
     this.soladeckGroup.add(hub);
 
     this.group.add(this.soladeckGroup);
+
+    // 6. Inverter Chassis Grounding Lug (Bonding to wall grounding wire)
+    const invLug = new THREE.Mesh(lugGeo, brassMat);
+    invLug.position.set(0.18, -0.365, -0.02);
+    this.group.add(invLug);
   }
 
   /**
@@ -391,10 +396,10 @@ export class CentralInverterModel {
     // Point 3: Horizontal run secured by unistrut straps
     // Point 4: Sweep into Central Inverter left MPPT gland
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.438, -0.095, -0.167),
-      new THREE.Vector3(-1.18, -0.16, -0.12),
-      new THREE.Vector3(-0.75, -0.26, 0.01),
-      new THREE.Vector3(-0.40, -0.38, 0.01),
+      new THREE.Vector3(-1.338, -0.095, -0.167),
+      new THREE.Vector3(-1.08, -0.16, -0.12),
+      new THREE.Vector3(-0.65, -0.26, 0.01),
+      new THREE.Vector3(-0.30, -0.38, 0.01),
       new THREE.Vector3(-0.14, -0.38, 0.01),
       new THREE.Vector3(-0.14, -0.365, 0.01)
     ]);
@@ -421,7 +426,7 @@ export class CentralInverterModel {
     const strapMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.35 });
     this.fadeMaterials.push(strapMat);
 
-    [-0.95, -0.50].forEach((sx) => {
+    [-0.75, -0.40].forEach((sx) => {
       const strap = new THREE.Mesh(strapGeo, strapMat);
       strap.rotation.z = Math.PI / 2;
       strap.position.set(sx, -0.38, 0.01);

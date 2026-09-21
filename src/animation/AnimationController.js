@@ -261,6 +261,15 @@ export class AnimationController {
     // Pause orbit during micro-macro inspection
     this.isAutoOrbit = false;
 
+    if (layerId === 'centralInverter') {
+      this.focusCameraOnCentralInverter(duration);
+      return;
+    }
+    if (layerId === 'batteryStorage') {
+      this.focusCameraOnBatteryStorage(duration);
+      return;
+    }
+
     // Find layer
     const layer = this.model.layers.find(l => l.id === layerId);
     if (!layer) return;
@@ -426,8 +435,8 @@ export class AnimationController {
   focusCameraOnCentralInverter(duration = 1.4) {
     this.isAutoOrbit = false;
 
-    const targetPos = { x: 2.05, y: 0.16, z: 0.02 };
-    const camPos = { x: 2.55, y: 0.42, z: 0.92 };
+    const targetPos = { x: 1.95, y: 0.16, z: 0.02 };
+    const camPos = { x: 2.45, y: 0.42, z: 0.92 };
 
     gsap.to(this.scene.controls.target, {
       x: targetPos.x,
@@ -453,8 +462,8 @@ export class AnimationController {
   focusCameraOnBatteryStorage(duration = 1.4) {
     this.isAutoOrbit = false;
 
-    const targetPos = { x: 2.80, y: 0.15, z: 0.02 };
-    const camPos = { x: 3.25, y: 0.38, z: 0.88 };
+    const targetPos = { x: 2.85, y: 0.15, z: 0.02 };
+    const camPos = { x: 3.30, y: 0.38, z: 0.88 };
 
     gsap.to(this.scene.controls.target, {
       x: targetPos.x,

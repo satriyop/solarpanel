@@ -21,7 +21,7 @@ export class BatteryStorageModel {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'BatteryStorage';
-    this.group.position.set(2.80, 0.15, -0.2); // Positioned to the right of Central Inverter on equipment wall
+    this.group.position.set(2.85, 0.15, -0.2); // Positioned on equipment wall with 18cm NEC service clearance
 
     this.isVisible = false;
     this.group.visible = false;
@@ -63,8 +63,8 @@ export class BatteryStorageModel {
     });
     this.fadeMaterials.push(emtConduitMat);
 
-    // 2. Wall Mounting Backer Plate
-    const wallPlateGeo = new THREE.BoxGeometry(0.72, 1.05, 0.02);
+    // 2. Wall Mounting Backer Plate (Aligns flush with Central Inverter at Z = -0.10)
+    const wallPlateGeo = new THREE.BoxGeometry(0.68, 1.05, 0.02);
     const wallPlateMat = new THREE.MeshStandardMaterial({
       color: 0x181c24,
       roughness: 0.85,
@@ -72,7 +72,7 @@ export class BatteryStorageModel {
     });
     this.fadeMaterials.push(wallPlateMat);
     const wallPlate = new THREE.Mesh(wallPlateGeo, wallPlateMat);
-    wallPlate.position.set(0, 0, -0.095);
+    wallPlate.position.set(0, 0, -0.10);
     wallPlate.receiveShadow = true;
     wallPlate.userData.isBatteryStorage = true;
     this.group.add(wallPlate);
@@ -82,12 +82,12 @@ export class BatteryStorageModel {
     const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
     this.fadeMaterials.push(boltMat);
     [
-      [-0.32, 0.48], [0.32, 0.48],
-      [-0.32, -0.48], [0.32, -0.48]
+      [-0.30, 0.48], [0.30, 0.48],
+      [-0.30, -0.48], [0.30, -0.48]
     ].forEach(([bx, by]) => {
       const bolt = new THREE.Mesh(boltGeo, boltMat);
       bolt.rotation.x = Math.PI / 2;
-      bolt.position.set(bx, by, -0.082);
+      bolt.position.set(bx, by, -0.088);
       this.group.add(bolt);
     });
 
@@ -136,6 +136,27 @@ export class BatteryStorageModel {
     trim.position.set(-0.06, -0.02, D / 2 + 0.008);
     trim.userData.isBatteryStorage = true;
     this.group.add(trim);
+
+    // 4b. Interior Service LED Luminaire Strip (illuminates LiFePO4 cells & BMS through window)
+    const bayLightGroup = new THREE.Group();
+    const ledFixtureGeo = new THREE.BoxGeometry(0.30, 0.012, 0.024);
+    const ledFixtureMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+    this.fadeMaterials.push(ledFixtureMat);
+    const ledFixture = new THREE.Mesh(ledFixtureGeo, ledFixtureMat);
+    ledFixture.position.set(-0.06, 0.28, 0.035);
+    bayLightGroup.add(ledFixture);
+
+    const ledEmitterGeo = new THREE.BoxGeometry(0.28, 0.004, 0.016);
+    const ledEmitterMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe }); // Cool daylight white
+    this.fadeMaterials.push(ledEmitterMat);
+    const ledEmitter = new THREE.Mesh(ledEmitterGeo, ledEmitterMat);
+    ledEmitter.position.set(-0.06, 0.273, 0.035);
+    bayLightGroup.add(ledEmitter);
+
+    const bayPointLight = new THREE.PointLight(0x38bdf8, 1.8, 0.75, 2.0);
+    bayPointLight.position.set(-0.06, 0.22, 0.05);
+    bayLightGroup.add(bayPointLight);
+    this.group.add(bayLightGroup);
 
     // 5. Internal Prismatic LiFePO4 Battery Cells (14 Cells in 2 Columns)
     const cellGroup = new THREE.Group();
@@ -306,43 +327,99 @@ export class BatteryStorageModel {
   }
 
   /**
-   * Builds an authentic metallic EMT conduit path connecting Central Inverter BATTERY port to Battery Unit
+   * Builds an authentic rigid metallic EMT conduit path connecting Central Inverter BATTERY port to Battery Unit
    */
   initConduitRun(emtMat) {
-    // Start: Central Inverter BATTERY port at local relative offset (-0.71, -0.315, 0.01)
-    // Runs rightward along equipment wall
-    // Enters Battery unit bottom-left DC gland at (-0.18, -0.40, 0.01)
+    this.interconnectGroup = new THREE.Group();
+    this.interconnectGroup.name = 'BatteryInterconnect';
+
+    // Rigid 90° EMT Conduit:
+    // P0: Central Inverter BATTERY port at local relative offset (-0.86, -0.315, 0.01)
+    // P1: Straight vertical drop down to (-0.86, -0.45, 0.01)
+    // P2: 90° sweep elbow bending right to horizontal at Y = -0.49
+    // P3: Horizontal straight run along wall (-0.50, -0.49, 0.01) to (-0.20, -0.49, 0.01)
+    // P4: 90° sweep elbow bending upward
+    // P5: Vertical rise into Battery bottom gland at (-0.16, -0.40, 0.01)
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.71, -0.315, 0.01),
-      new THREE.Vector3(-0.55, -0.38, 0.01),
-      new THREE.Vector3(-0.35, -0.42, 0.01),
-      new THREE.Vector3(-0.18, -0.42, 0.01),
-      new THREE.Vector3(-0.18, -0.40, 0.01)
+      new THREE.Vector3(-0.86, -0.315, 0.01),
+      new THREE.Vector3(-0.86, -0.45, 0.01),
+      new THREE.Vector3(-0.85, -0.48, 0.01),
+      new THREE.Vector3(-0.82, -0.49, 0.01),
+      new THREE.Vector3(-0.50, -0.49, 0.01),
+      new THREE.Vector3(-0.20, -0.49, 0.01),
+      new THREE.Vector3(-0.17, -0.48, 0.01),
+      new THREE.Vector3(-0.16, -0.45, 0.01),
+      new THREE.Vector3(-0.16, -0.40, 0.01)
     ]);
     this.conduitCurve = curve;
 
-    const pipeGeo = new THREE.TubeGeometry(curve, 36, 0.014, 16, false);
+    const pipeGeo = new THREE.TubeGeometry(curve, 48, 0.014, 16, false);
     const pipeMesh = new THREE.Mesh(pipeGeo, emtMat);
     pipeMesh.castShadow = true;
     pipeMesh.userData.isBatteryStorage = true;
-    this.group.add(pipeMesh);
+    this.interconnectGroup.add(pipeMesh);
 
-    // Brass DC Gland on Battery unit bottom
+    // Compression locknut fittings at conduit endpoints
+    const locknutGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.016, 6);
+    const locknutMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.3 });
+    this.fadeMaterials.push(locknutMat);
+
+    const locknutInv = new THREE.Mesh(locknutGeo, locknutMat);
+    locknutInv.position.set(-0.86, -0.325, 0.01);
+    this.interconnectGroup.add(locknutInv);
+
+    const locknutBat = new THREE.Mesh(locknutGeo, locknutMat);
+    locknutBat.position.set(-0.16, -0.395, 0.01);
+    this.interconnectGroup.add(locknutBat);
+
+    // Wall unistrut mounting straps for horizontal pipe run
+    const strapGeo = new THREE.CylinderGeometry(0.017, 0.017, 0.018, 16);
+    const strapMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.35 });
+    this.fadeMaterials.push(strapMat);
+
+    [-0.65, -0.35].forEach((sx) => {
+      const strap = new THREE.Mesh(strapGeo, strapMat);
+      strap.rotation.z = Math.PI / 2;
+      strap.position.set(sx, -0.49, 0.01);
+      this.interconnectGroup.add(strap);
+    });
+
+    // Bare copper equipment grounding wire (#6 AWG) between Inverter and Battery chassis
+    const groundCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.72, -0.365, -0.02),
+      new THREE.Vector3(-0.50, -0.44, -0.02),
+      new THREE.Vector3(-0.21, -0.40, -0.02)
+    ]);
+    const groundGeo = new THREE.TubeGeometry(groundCurve, 16, 0.003, 8, false);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.95, roughness: 0.25 });
+    this.fadeMaterials.push(groundMat);
+    const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+    this.interconnectGroup.add(groundMesh);
+
+    this.group.add(this.interconnectGroup);
+
+    // Brass DC Gland on Battery unit bottom (anchored to battery chassis)
     const glandGeo = new THREE.CylinderGeometry(0.016, 0.018, 0.035, 16);
     const glandMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.9 });
     this.fadeMaterials.push(glandMat);
     const gland = new THREE.Mesh(glandGeo, glandMat);
-    gland.position.set(-0.18, -0.40, 0.01);
+    gland.position.set(-0.16, -0.40, 0.01);
     this.group.add(gland);
 
-    // Wall mounting strap
-    const strapGeo = new THREE.CylinderGeometry(0.017, 0.017, 0.018, 16);
-    const strapMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.35 });
-    this.fadeMaterials.push(strapMat);
-    const strap = new THREE.Mesh(strapGeo, strapMat);
-    strap.rotation.z = Math.PI / 2;
-    strap.position.set(-0.45, -0.42, 0.01);
-    this.group.add(strap);
+    // Grounding Lug on Battery Chassis
+    const lugGeo = new THREE.BoxGeometry(0.012, 0.012, 0.012);
+    const lug = new THREE.Mesh(lugGeo, glandMat);
+    lug.position.set(-0.21, -0.40, -0.02);
+    this.group.add(lug);
+  }
+
+  /**
+   * Toggles visibility of the interconnect conduit and bonding wire
+   */
+  setInterconnectVisible(visible) {
+    if (this.interconnectGroup) {
+      this.interconnectGroup.visible = visible;
+    }
   }
 
   /**

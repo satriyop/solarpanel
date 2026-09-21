@@ -263,6 +263,11 @@ window.addEventListener('DOMContentLoaded', () => {
     if (isCentral) {
       centralInverter.updateTelemetry(currentWatts);
     }
+
+    // 7. Update DC interconnect conduit: only visible when both Central Inverter and Battery are active
+    if (batteryStorage) {
+      batteryStorage.setInterconnectVisible(isCentral && isBatteryActive);
+    }
   }
 
   // Inverter Architecture Switcher (Roof Microinverter vs Wall Central Inverter)
@@ -278,7 +283,15 @@ window.addEventListener('DOMContentLoaded', () => {
     btnToggleBattery.addEventListener('click', () => {
       isBatteryActive = !isBatteryActive;
       btnToggleBattery.classList.toggle('active', isBatteryActive);
+
+      // If user turns ON DC Battery Storage while in Microinverter mode, auto-switch to Central Hybrid Inverter
+      if (isBatteryActive && currentInverterMode === 'micro') {
+        setInverterArchitecture('central');
+      }
+
       batteryStorage.setVisible(isBatteryActive);
+      batteryStorage.setInterconnectVisible(isBatteryActive && (currentInverterMode === 'central'));
+
       if (pillBattery) {
         pillBattery.style.display = isBatteryActive ? 'inline-block' : 'none';
       }
