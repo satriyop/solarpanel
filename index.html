@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Residential Solar Panel — 3D Exploded View Diagram</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- 16:9 Aspect Ratio Studio Viewport -->
+    <div id="viewport-wrapper">
+      <div class="ratio-indicator">16:9 4K STUDIO VIEWPORT</div>
+      
+      <!-- 3D WebGL Canvas Container -->
+      <div id="canvas-container"></div>
+
+      <!-- 3D Projected Screen Annotations -->
+      <div id="labels-container"></div>
+
+      <!-- Top Engineering Header HUD -->
+      <div class="hud-layer hud-header">
+        <div class="brand-badge">
+          <svg class="solar-icon" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          <div class="brand-text">
+            <h1>SolarPanel Component Breakdown</h1>
+            <p>Photorealistic 3D Isometric Exploded View Diagram</p>
+          </div>
+        </div>
+
+        <div class="spec-badge">
+          <span class="dot"></span>
+          <span>4K STUDIO RENDER</span>
+          <span style="opacity: 0.4;">|</span>
+          <span>60-CELL MONO-SI</span>
+        </div>
+      </div>
+
+      <!-- Layer Quick-Select Filter Pills -->
+      <div class="hud-layer layer-pills-bar">
+        <button class="layer-pill active" data-layer="all">All Layers</button>
+        <button class="layer-pill" data-layer="frame">1. Aluminum Frame</button>
+        <button class="layer-pill" data-layer="glass">2. Tempered Glass</button>
+        <button class="layer-pill" data-layer="topEva">3. Top EVA</button>
+        <button class="layer-pill" data-layer="cells">4. Silicon Cells</button>
+        <button class="layer-pill" data-layer="bottomEva">5. Bottom EVA</button>
+        <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
+        <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
+      </div>
+
+      <!-- Bottom Control Dock -->
+      <div class="hud-layer hud-footer">
+        <!-- Animation & State Controls -->
+        <div class="control-card">
+          <div class="btn-group">
+            <button id="btn-start-frame" class="hud-btn active">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+              </svg>
+              Start: Assembled
+            </button>
+            <button id="btn-end-frame" class="hud-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 4h16v2H4zm0 7h16v2H4zm0 7h16v2H4z"/>
+              </svg>
+              End: Exploded
+            </button>
+          </div>
+
+          <div class="slider-group">
+            <span class="slider-label">Separation</span>
+            <input type="range" id="slider-explode" class="hud-slider" min="0" max="100" value="0" />
+            <span id="label-explode-val" style="font-size: 11px; font-family: monospace; width: 32px;">0%</span>
+          </div>
+
+          <button id="btn-auto-cycle" class="hud-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Auto Cycle
+          </button>
+        </div>
+
+        <!-- Camera, Studio & Visual Controls -->
+        <div class="control-card">
+          <button id="btn-orbit-pan" class="hud-toggle-btn active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            360° Orbit Pan
+          </button>
+
+          <button id="btn-toggle-labels" class="hud-toggle-btn active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Labels
+          </button>
+
+          <button id="btn-toggle-guides" class="hud-toggle-btn active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="3 3"></line>
+              <path d="M5 12h14"></path>
+            </svg>
+            CAD Guides
+          </button>
+
+          <button id="btn-toggle-theme" class="hud-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            Dark Studio
+          </button>
+
+          <button id="btn-toggle-4k" class="hud-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+              <polyline points="17 2 12 7 7 2"></polyline>
+            </svg>
+            4K Detail
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
