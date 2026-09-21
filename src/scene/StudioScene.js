@@ -52,8 +52,14 @@ export class StudioScene {
   }
 
   initCamera() {
-    // 46° FOV gives optimal framing capturing both the 3D Sun in the sky and the solar panel
-    this.camera = new THREE.PerspectiveCamera(46, this.width / this.height, 0.1, 100);
+    const aspect = this.width / this.height;
+    const baseFov = 46;
+    let initialFov = baseFov;
+    if (aspect < 1.0) {
+      initialFov = THREE.MathUtils.clamp(baseFov / aspect * 0.72, 46, 64);
+    }
+    // Dynamic FOV gives optimal framing on both portrait mobile and widescreen desktop
+    this.camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.1, 100);
     // Isometric studio framing: elevated, angled 48°
     this.camera.position.set(2.6, 2.1, 3.4);
     this.camera.lookAt(0, 0.15, 0);
@@ -211,7 +217,19 @@ export class StudioScene {
     this.width = this.container.clientWidth;
     this.height = this.container.clientHeight;
 
-    this.camera.aspect = this.width / this.height;
+    const aspect = this.width / this.height;
+    this.camera.aspect = aspect;
+
+    // Dynamic FOV adaptation for mobile portrait & tablets so solar panel remains in full view
+    const baseFov = 46;
+    if (aspect < 1.0) {
+      this.camera.fov = THREE.MathUtils.clamp(baseFov / aspect * 0.72, 46, 64);
+    } else if (aspect < 1.35) {
+      this.camera.fov = THREE.MathUtils.clamp(baseFov / aspect * 0.88, 46, 52);
+    } else {
+      this.camera.fov = baseFov;
+    }
+
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height);
   }

@@ -18,26 +18,25 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #1a1c20;
+  background-color: #131518;
   color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
+  width: 100dvw;
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 16:9 Studio Container */
+/* Responsive Full-Bleed Studio Viewport */
 #viewport-wrapper {
   position: relative;
-  width: 100vw;
-  height: 56.25vw; /* 16:9 ratio */
-  max-height: 100vh;
-  max-width: 177.78vh; /* 16:9 ratio */
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
   background: var(--bg-studio-light);
-  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
@@ -48,6 +47,7 @@ body {
   top: 0;
   left: 0;
   z-index: 1;
+  touch-action: none;
 }
 
 #canvas-container canvas {
@@ -147,12 +147,13 @@ body {
 
 /* Header */
 .hud-header {
-  top: 24px;
-  left: 28px;
-  right: 28px;
+  top: max(20px, env(safe-area-inset-top));
+  left: max(24px, env(safe-area-inset-left));
+  right: max(24px, env(safe-area-inset-right));
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
 }
 
 .brand-badge {
@@ -223,16 +224,31 @@ body {
 
 /* Layer Selection Pill Bar */
 .layer-pills-bar {
-  top: 92px;
-  left: 28px;
+  top: 86px;
+  left: max(24px, env(safe-area-inset-left));
+  right: max(24px, env(safe-area-inset-right));
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
-  max-width: 65%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+  max-width: calc(100% - 48px);
   pointer-events: auto;
+  scroll-snap-type: x proximity;
+  mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+}
+
+.layer-pills-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .layer-pill {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  white-space: nowrap;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -244,6 +260,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  touch-action: manipulation;
 }
 
 .layer-pill:hover {
@@ -282,13 +299,14 @@ body {
 
 /* Bottom Control Dock */
 .hud-footer {
-  bottom: 24px;
-  left: 28px;
-  right: 28px;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: max(24px, env(safe-area-inset-left));
+  right: max(24px, env(safe-area-inset-right));
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 16px;
+  pointer-events: none;
 }
 
 .control-card {
@@ -296,13 +314,25 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.85);
-  padding: 12px 18px;
+  padding: 10px 16px;
   border-radius: 16px;
   box-shadow: var(--shadow-hud);
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   pointer-events: auto;
+}
+
+.control-card-anim {
+  flex-shrink: 0;
+}
+
+.control-card-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn-group {
@@ -326,6 +356,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .hud-btn:hover {
@@ -361,13 +393,14 @@ body {
   border-radius: 4px;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .hud-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #0066cc;
   cursor: pointer;
@@ -392,6 +425,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .hud-toggle-btn.active {
@@ -510,7 +545,7 @@ body {
 .sun-simulator-card {
   position: absolute;
   top: 86px;
-  right: 28px;
+  right: max(24px, env(safe-area-inset-right));
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -518,7 +553,7 @@ body {
   padding: 14px 18px;
   border-radius: 16px;
   box-shadow: var(--shadow-hud);
-  width: 250px;
+  width: 255px;
   z-index: 10;
   opacity: 0;
   pointer-events: none;
@@ -537,6 +572,48 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 8px;
+}
+
+.sun-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sun-card-close-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #64748b;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sun-card-close-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+.studio-dark .sun-card-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+.studio-dark .sun-card-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .sun-sim-title {
@@ -875,6 +952,538 @@ body {
   font-size: 9.5px;
   font-weight: 500;
   opacity: 0.75;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (Tablets, Mobile Phones, Landscape, & High-DPI Screens)
+   ========================================================================== */
+
+/* Laptop & Compact Desktop Screens (<= 1200px) */
+@media (max-width: 1200px) {
+  .hud-header {
+    gap: 10px;
+  }
+
+  .brand-text h1 {
+    font-size: 13.5px;
+  }
+
+  .brand-text p {
+    font-size: 10px;
+    max-width: 320px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .grid-mode-btn {
+    padding: 5px 10px;
+    gap: 8px;
+  }
+
+  .mode-title {
+    font-size: 10.5px;
+  }
+
+  .mode-sub {
+    font-size: 8.5px;
+  }
+
+  .spec-badge {
+    padding: 6px 12px;
+    font-size: 10.5px;
+    gap: 8px;
+  }
+
+  .hud-footer {
+    gap: 12px;
+  }
+
+  .control-card {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .hud-slider {
+    width: 110px;
+  }
+}
+
+/* Tablet Screens (<= 992px) */
+@media (max-width: 992px) {
+  .hud-header {
+    top: max(16px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+  }
+
+  .brand-badge {
+    padding: 8px 14px;
+    gap: 10px;
+  }
+
+  .brand-text p {
+    display: none; /* Hide subtitle to preserve clean CAD viewport */
+  }
+
+  .layer-pills-bar {
+    top: 76px;
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    max-width: calc(100% - 32px);
+  }
+
+  .sun-simulator-card {
+    top: 76px;
+    right: max(16px, env(safe-area-inset-right));
+    width: 240px;
+    padding: 12px 14px;
+  }
+
+  .hud-footer {
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .control-card-anim {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .control-card-tools {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+  }
+
+  .control-card-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .control-card-tools .hud-toggle-btn {
+    flex-shrink: 0;
+  }
+}
+
+/* Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  .hud-header {
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    padding: 6px 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .solar-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .brand-text h1 {
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
+  }
+
+  .brand-text p {
+    display: none;
+  }
+
+  .grid-mode-selector {
+    padding: 3px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+
+  .grid-mode-btn {
+    padding: 5px 8px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  .mode-title {
+    font-size: 10px;
+  }
+
+  .mode-sub {
+    display: none;
+  }
+
+  .mode-led {
+    width: 7px;
+    height: 7px;
+  }
+
+  .spec-badge {
+    display: none; /* Hide redundant specs to give screen space to 3D model */
+  }
+
+  .ratio-indicator {
+    display: none;
+  }
+
+  /* Layer Pills: Compact Swipable Bar */
+  .layer-pills-bar {
+    top: 64px;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    max-width: calc(100% - 24px);
+    gap: 5px;
+    padding-bottom: 2px;
+  }
+
+  .layer-pill {
+    padding: 5px 10px;
+    font-size: 10.5px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Mobile Bottom Control Dock: Thumb-Friendly Inverted Stack */
+  .hud-footer {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    flex-direction: column-reverse; /* Explode slider closest to thumb */
+    gap: 6px;
+  }
+
+  .control-card {
+    padding: 6px 10px;
+    border-radius: 12px;
+    width: 100%;
+  }
+
+  /* Primary animation controls row */
+  .control-card-anim {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .control-card-anim .btn-group {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .control-card-anim .hud-btn {
+    padding: 6px 8px;
+    font-size: 10.5px;
+    min-height: 36px;
+    gap: 4px;
+  }
+
+  .control-card-anim .hud-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .control-card-anim .slider-group {
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .control-card-anim .slider-label {
+    display: none; /* Saves horizontal space on mobile */
+  }
+
+  .control-card-anim .hud-slider {
+    flex: 1;
+    width: 100%;
+    min-width: 50px;
+    height: 6px;
+  }
+
+  .hud-slider::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .control-card-anim #label-explode-val {
+    font-size: 10px;
+    width: 26px;
+  }
+
+  .control-card-anim #btn-auto-cycle {
+    padding: 6px 10px;
+    font-size: 10.5px;
+    min-height: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Secondary tools bar: Horizontally swipeable */
+  .control-card-tools {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    padding: 6px 8px;
+    justify-content: flex-start;
+    mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
+  }
+
+  .control-card-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .control-card-tools .hud-toggle-btn {
+    padding: 6px 10px;
+    font-size: 10.5px;
+    min-height: 36px;
+    flex-shrink: 0;
+    gap: 5px;
+  }
+
+  .control-card-tools .hud-toggle-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Solar Irradiance Widget: Floating Bottom Sheet on Mobile */
+  .sun-simulator-card {
+    top: auto;
+    bottom: calc(115px + env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    width: auto;
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 10px 14px;
+    border-radius: 14px;
+    transform: translateY(16px);
+  }
+
+  .sun-simulator-card.active {
+    transform: translateY(0);
+  }
+
+  .power-watts-val {
+    font-size: 20px;
+  }
+
+  .power-watts-unit {
+    font-size: 11.5px;
+  }
+
+  .sun-metrics-grid {
+    font-size: 9.5px;
+  }
+
+  .module-spec-strip {
+    font-size: 8.5px;
+    padding: 3px 6px;
+  }
+
+  .mlpe-conversion-row {
+    gap: 4px;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .mlpe-stat-badge {
+    padding: 3px 4px;
+  }
+
+  .mlpe-stat-label {
+    font-size: 7.5px;
+  }
+
+  .mlpe-stat-val {
+    font-size: 10px;
+  }
+
+  /* 3D Projected Layer Annotations on Mobile */
+  .annotation-card {
+    padding: 4px 8px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+
+  .annotation-step {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .annotation-title {
+    font-size: 10.5px;
+  }
+
+  .annotation-desc {
+    display: none; /* Hide verbose subtitle in 3D scene on mobile */
+  }
+
+  .annotation-line {
+    width: 20px;
+  }
+
+  /* Hover Tooltip on Mobile */
+  #hover-tooltip {
+    max-width: calc(100vw - 28px);
+    font-size: 11px;
+    padding: 8px 12px;
+  }
+
+  .hud-toast {
+    bottom: calc(115px + env(safe-area-inset-bottom));
+    font-size: 11px;
+    padding: 8px 14px;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+/* Small Handset Screens (<= 480px) */
+@media (max-width: 480px) {
+  .hud-header {
+    gap: 6px;
+  }
+
+  .brand-badge {
+    padding: 5px 8px;
+  }
+
+  .brand-text h1 {
+    font-size: 10.5px;
+  }
+
+  .grid-mode-btn {
+    padding: 4px 6px;
+  }
+
+  .mode-title {
+    font-size: 9px;
+  }
+
+  .control-card-anim .hud-btn {
+    padding: 5px 6px;
+    font-size: 9.5px;
+  }
+
+  .control-card-anim #btn-auto-cycle {
+    padding: 5px 8px;
+    font-size: 9.5px;
+  }
+}
+
+/* Mobile Landscape Orientation (height <= 500px) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-header {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .brand-badge {
+    padding: 4px 8px;
+  }
+
+  .brand-text h1 {
+    font-size: 10.5px;
+  }
+
+  .brand-text p {
+    display: none;
+  }
+
+  .grid-mode-btn {
+    padding: 3px 6px;
+  }
+
+  .spec-badge {
+    display: none;
+  }
+
+  .layer-pills-bar {
+    top: 44px;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    max-width: calc(100% - 24px);
+    gap: 4px;
+  }
+
+  .layer-pill {
+    padding: 3px 8px;
+    font-size: 9.5px;
+    min-height: 26px;
+  }
+
+  .hud-footer {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .control-card {
+    padding: 4px 8px;
+    border-radius: 10px;
+    gap: 8px;
+    width: auto;
+  }
+
+  .control-card-anim {
+    flex-shrink: 0;
+  }
+
+  .control-card-anim .hud-btn {
+    padding: 4px 7px;
+    font-size: 9.5px;
+    min-height: 28px;
+  }
+
+  .control-card-anim .hud-slider {
+    width: 80px;
+  }
+
+  .control-card-tools {
+    max-width: 50vw;
+    padding: 4px 6px;
+  }
+
+  .control-card-tools .hud-toggle-btn {
+    padding: 4px 8px;
+    font-size: 9.5px;
+    min-height: 28px;
+  }
+
+  .sun-simulator-card {
+    top: 44px;
+    bottom: auto;
+    right: max(12px, env(safe-area-inset-right));
+    left: auto;
+    width: 220px;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+    padding: 8px 10px;
+  }
+
+  .ratio-indicator {
+    display: none;
+  }
 }
 
 

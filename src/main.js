@@ -54,6 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnOrbitPan = document.getElementById('btn-orbit-pan');
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
+  const btnCloseSunCard = document.getElementById('btn-close-sun-card');
   const btnTogglePower = document.getElementById('btn-toggle-power');
   const btnToggleInverterMode = document.getElementById('btn-toggle-inverter-mode');
   const labelInverterMode = document.getElementById('label-inverter-mode');
@@ -230,6 +231,19 @@ window.addEventListener('DOMContentLoaded', () => {
       if (isSunSimulatorActive) {
         updateSolarGeneration(currentSunAngle);
       } else {
+        solarPanel.setSunAbsorption(1.0);
+      }
+    });
+  }
+
+  // Close button inside Sun Simulator card
+  if (btnCloseSunCard) {
+    btnCloseSunCard.addEventListener('click', () => {
+      if (isSunSimulatorActive) {
+        isSunSimulatorActive = false;
+        if (btnToggleSun) btnToggleSun.classList.remove('active');
+        if (sunSimCard) sunSimCard.classList.remove('active');
+        studio.setSunSimulatorVisible(false);
         solarPanel.setSunAbsorption(1.0);
       }
     });

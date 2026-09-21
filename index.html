@@ -2,14 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>Residential Solar Panel — 3D Exploded View Diagram</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body class="studio-dark">
-    <!-- 16:9 Aspect Ratio Studio Viewport -->
+    <!-- Studio Viewport -->
     <div id="viewport-wrapper">
-      <div class="ratio-indicator">16:9 STUDIO VIEWPORT</div>
+      <div class="ratio-indicator">3D CAD WORKBENCH</div>
       
       <!-- 3D WebGL Canvas Container -->
       <div id="canvas-container"></div>
@@ -63,9 +63,12 @@
           <div class="sun-sim-title">
             <span>☀️</span> Solar Irradiance
           </div>
-          <div class="sun-power-readout">
-            <span id="sun-watts-val" class="power-watts-val">415</span>
-            <span class="power-watts-unit">W</span>
+          <div class="sun-header-right">
+            <div class="sun-power-readout">
+              <span id="sun-watts-val" class="power-watts-val">415</span>
+              <span class="power-watts-unit">W</span>
+            </div>
+            <button id="btn-close-sun-card" class="sun-card-close-btn" aria-label="Close Simulator" title="Close Simulator">✕</button>
           </div>
         </div>
 
@@ -126,7 +129,7 @@
       <!-- Bottom Control Dock -->
       <div class="hud-layer hud-footer">
         <!-- Animation & State Controls -->
-        <div class="control-card">
+        <div class="control-card control-card-anim">
           <div class="btn-group">
             <button id="btn-start-frame" class="hud-btn active">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -157,7 +160,7 @@
         </div>
 
         <!-- Camera, Studio & Visual Controls -->
-        <div class="control-card">
+        <div class="control-card control-card-tools">
           <button id="btn-orbit-pan" class="hud-toggle-btn active">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
