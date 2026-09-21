@@ -171,6 +171,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const visible = !solarPanel.showAlignmentGuides;
     solarPanel.setAlignmentGuidesVisible(visible);
     solarPanel.setExplodeProgress(anim.explodeProgress);
+    studio.setIncidentGizmoVisible(visible);
     btnToggleGuides.classList.toggle('active', visible);
   });
 

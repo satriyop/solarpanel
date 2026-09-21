@@ -36,7 +36,7 @@ export class SolarPanelModel {
       { id: 'jbox', name: '7. Junction Box & MC4 Cables', assembledY: -0.038, explodedY: -0.88 }
     ];
 
-    this.showAlignmentGuides = true;
+    this.showAlignmentGuides = false;
     this.initTextures();
     this.buildLayers();
     this.buildAlignmentGuides();
@@ -650,6 +650,7 @@ export class SolarPanelModel {
       this.guideLines.push({ line, corner, points });
     });
 
+    this.guidesGroup.visible = false;
     this.group.add(this.guidesGroup);
   }
 

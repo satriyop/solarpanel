@@ -236,6 +236,57 @@ export class StudioScene {
   }
 
   /**
+   * Helper to create a crisp 2D canvas sprite for CAD HUD annotations
+   */
+  createBadgeSprite(text, color = '#06b6d4', bgColor = 'rgba(15, 23, 42, 0.88)') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    const draw = (txt) => {
+      ctx.clearRect(0, 0, 256, 64);
+      // Pill rounded rectangle
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(6, 6, 244, 52, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // Text label
+      ctx.font = 'bold 22px "JetBrains Mono", monospace, sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(txt, 128, 32);
+    };
+
+    draw(text);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const mat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.38, 0.095, 1.0);
+    sprite.renderOrder = 999;
+
+    return {
+      sprite,
+      updateText: (newTxt) => {
+        draw(newTxt);
+        texture.needsUpdate = true;
+      }
+    };
+  }
+
+  /**
    * Initialize Physically-Accurate Sun Visualizer:
    * 1. Celestial Arc Trajectory in sky
    * 2. Glowing Sun Orb with corona halo
@@ -370,27 +421,81 @@ export class StudioScene {
     // 5. Incident Angle (θ) CAD Gizmo on Panel Surface
     this.incidentGizmo = new THREE.Group();
     this.incidentGizmo.position.set(0, 0.03, 0);
+    this.incidentGizmo.visible = false; // Hidden by default, controlled via CAD Guides toggle
 
-    // Normal vector arrow (pointing straight up 90°)
-    const normalPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.6, 0)];
+    // Normal vector line (pointing straight up 90°)
+    const normalPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.72, 0)];
     const normalGeo = new THREE.BufferGeometry().setFromPoints(normalPoints);
     const normalMat = new THREE.LineDashedMaterial({
       color: 0x06b6d4,
       dashSize: 0.03,
       gapSize: 0.02,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.85
     });
     this.normalLine = new THREE.Line(normalGeo, normalMat);
     this.normalLine.computeLineDistances();
     this.incidentGizmo.add(this.normalLine);
 
-    // Incident ray line on panel
-    const incRayPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.6, 0)];
+    // Normal Vector Arrow Tip (Cyan Cone)
+    const normalConeGeo = new THREE.ConeGeometry(0.022, 0.065, 12);
+    const normalConeMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+    const normalCone = new THREE.Mesh(normalConeGeo, normalConeMat);
+    normalCone.position.set(0, 0.72, 0);
+    this.incidentGizmo.add(normalCone);
+
+    // Normal Vector Badge Sprite: "Normal (90°)"
+    this.normalBadge = this.createBadgeSprite('Normal (90°)', '#06b6d4');
+    this.normalBadge.sprite.position.set(0, 0.82, 0);
+    this.incidentGizmo.add(this.normalBadge.sprite);
+
+    // CAD Right-Angle (90°) Perpendicular Mark at Base
+    const rightAngleGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0.07, 0),
+      new THREE.Vector3(0.07, 0.07, 0),
+      new THREE.Vector3(0.07, 0, 0)
+    ]);
+    const rightAngleMat = new THREE.LineBasicMaterial({
+      color: 0x06b6d4,
+      transparent: true,
+      opacity: 0.7
+    });
+    this.rightAngleMark = new THREE.Line(rightAngleGeo, rightAngleMat);
+    this.incidentGizmo.add(this.rightAngleMark);
+
+    // Incident ray line on panel (Golden amber)
+    const incRayPoints = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.7, 0)];
     this.incRayGeo = new THREE.BufferGeometry().setFromPoints(incRayPoints);
     const incRayMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
     this.incRayLine = new THREE.Line(this.incRayGeo, incRayMat);
     this.incidentGizmo.add(this.incRayLine);
+
+    // Sun Ray Arrow Tip (Golden Amber Cone)
+    const rayConeGeo = new THREE.ConeGeometry(0.022, 0.065, 12);
+    const rayConeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+    this.incRayArrow = new THREE.Mesh(rayConeGeo, rayConeMat);
+    this.incidentGizmo.add(this.incRayArrow);
+
+    // Curved Angle Arc (θ) measuring angle between Normal and Sun Ray
+    this.ARC_SEGMENTS = 32;
+    const thetaArcPoints = [];
+    for (let i = 0; i <= this.ARC_SEGMENTS; i++) {
+      thetaArcPoints.push(new THREE.Vector3(0, 0, 0));
+    }
+    this.arcGeo = new THREE.BufferGeometry().setFromPoints(thetaArcPoints);
+    const thetaArcMat = new THREE.LineDashedMaterial({
+      color: 0xf59e0b,
+      dashSize: 0.02,
+      gapSize: 0.015,
+      transparent: true,
+      opacity: 0.95
+    });
+    this.arcLine = new THREE.Line(this.arcGeo, thetaArcMat);
+    this.incidentGizmo.add(this.arcLine);
+
+    // Angle θ Badge Sprite: "θ = 0°"
+    this.thetaBadge = this.createBadgeSprite('θ = 0°', '#f59e0b');
+    this.incidentGizmo.add(this.thetaBadge.sprite);
 
     // Full rectangular aperture illuminated target boundary on solar panel
     const targetGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.02, 1.72));
@@ -515,11 +620,52 @@ export class StudioScene {
 
     // 5. Update Incident Ray Line on Gizmo
     if (this.incRayLine && this.incRayGeo) {
+      const rayLen = 0.70;
+      const rayTipX = rayLen * sinVal;
+      const rayTipY = rayLen * cosVal;
       const posArr = this.incRayGeo.attributes.position.array;
-      posArr[3] = 0.6 * sinVal;
-      posArr[4] = 0.6 * cosVal;
-      posArr[5] = (0.6 * 0.35) * cosVal;
+      posArr[3] = rayTipX;
+      posArr[4] = rayTipY;
+      posArr[5] = 0;
       this.incRayGeo.attributes.position.needsUpdate = true;
+
+      if (this.incRayArrow) {
+        this.incRayArrow.position.set(rayTipX, rayTipY, 0);
+        this.incRayArrow.rotation.z = -rad;
+      }
+    }
+
+    // Update curved angle arc & live θ badge
+    if (this.arcLine && this.arcGeo) {
+      if (angleDeg < 3) {
+        this.arcLine.visible = false;
+        if (this.thetaBadge) this.thetaBadge.sprite.visible = false;
+      } else {
+        this.arcLine.visible = true;
+        if (this.thetaBadge) this.thetaBadge.sprite.visible = true;
+        const arcRadius = 0.38;
+        const pos = this.arcGeo.attributes.position.array;
+        for (let i = 0; i <= this.ARC_SEGMENTS; i++) {
+          const t = i / this.ARC_SEGMENTS;
+          const curA = t * rad;
+          pos[i * 3] = arcRadius * Math.sin(curA);
+          pos[i * 3 + 1] = arcRadius * Math.cos(curA);
+          pos[i * 3 + 2] = 0;
+        }
+        this.arcGeo.attributes.position.needsUpdate = true;
+        this.arcLine.computeLineDistances();
+
+        if (this.thetaBadge) {
+          const midA = rad * 0.5;
+          const badgeR = 0.52;
+          this.thetaBadge.sprite.position.set(
+            badgeR * Math.sin(midA),
+            badgeR * Math.cos(midA),
+            0
+          );
+          this.thetaBadge.updateText(`θ = ${Math.round(angleDeg)}°`);
+        }
+      }
     }
 
     // 6. Update Target Aperture Frame on Panel
@@ -532,6 +678,15 @@ export class StudioScene {
     }
 
     return { cosVal, iam, fresnelReflection };
+  }
+
+  /**
+   * Toggle CAD Incident Angle Gizmo Visibility
+   */
+  setIncidentGizmoVisible(visible) {
+    if (this.incidentGizmo) {
+      this.incidentGizmo.visible = visible;
+    }
   }
 
   /**
