@@ -342,14 +342,25 @@ export class StudioScene {
       this.incomingRays.push({ line: rayLine, ox, oz });
     });
 
-    // Rectangular soft translucent light volume bounding the incoming rays
-    const volGeo = new THREE.BoxGeometry(1.02, 1, 1.72);
-    volGeo.translate(0, 0.5, 0);
+    // Dynamic Volumetric Sunlight Shaft (Pyramidal Frustum from Sun Orb to Panel Corners)
+    const volGeo = new THREE.BufferGeometry();
+    const volPositions = new Float32Array(8 * 3);
+    volGeo.setAttribute('position', new THREE.BufferAttribute(volPositions, 3));
+    const volIndices = [
+      0, 1, 5,  0, 5, 4, // North face
+      1, 2, 6,  1, 6, 5, // East face
+      2, 3, 7,  2, 7, 6, // South face
+      3, 0, 4,  3, 4, 7, // West face
+      4, 5, 6,  4, 6, 7  // Base cap on panel
+    ];
+    volGeo.setIndex(volIndices);
+
     const volMat = new THREE.MeshBasicMaterial({
       color: 0xfef08a,
       transparent: true,
-      opacity: 0.08,
+      opacity: 0.07,
       side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     this.lightVolume = new THREE.Mesh(volGeo, volMat);
@@ -433,11 +444,15 @@ export class StudioScene {
 
     if (this.incomingRays) {
       this.incomingRays.forEach(({ line, ox, oz }) => {
+        // Target: Precisely on the 22° tilted solar panel aperture
         const target = new THREE.Vector3(ox, landingY - oz * sinTilt, oz * cosTilt);
+
+        // Source: Originates directly inside the glowing 3D Sun Orb!
+        // Distributed proportionally across the sun's radiant core (radius ~0.08m)
         const source = new THREE.Vector3(
-          target.x - rayDir.x * beamLength,
-          target.y - rayDir.y * beamLength,
-          target.z - rayDir.z * beamLength
+          sunPos.x + (ox / 0.45) * 0.08,
+          sunPos.y,
+          sunPos.z + (oz / 0.75) * 0.08
         );
 
         const posArr = line.geometry.attributes.position.array;
@@ -453,11 +468,53 @@ export class StudioScene {
       });
     }
 
-    // Update light volume orientation
+    // Update Volumetric Sunlight Shaft (True Pyramidal Frustum from Sun to Panel Corners)
     if (this.lightVolume) {
-      this.lightVolume.position.set(0, landingY, 0);
-      this.lightVolume.scale.set(1.0, beamLength * 0.8, 1.0);
-      this.lightVolume.material.opacity = Math.max(0.02, 0.08 * cosVal);
+      const posArr = this.lightVolume.geometry.attributes.position.array;
+      const sunR = 0.12; // Emitter radius around Sun Orb
+
+      // Top quad around the Sun
+      // 0: Top-Left at Sun
+      posArr[0] = sunPos.x - sunR;
+      posArr[1] = sunPos.y;
+      posArr[2] = sunPos.z - sunR;
+      // 1: Top-Right at Sun
+      posArr[3] = sunPos.x + sunR;
+      posArr[4] = sunPos.y;
+      posArr[5] = sunPos.z - sunR;
+      // 2: Bottom-Right at Sun
+      posArr[6] = sunPos.x + sunR;
+      posArr[7] = sunPos.y;
+      posArr[8] = sunPos.z + sunR;
+      // 3: Bottom-Left at Sun
+      posArr[9] = sunPos.x - sunR;
+      posArr[10] = sunPos.y;
+      posArr[11] = sunPos.z + sunR;
+
+      // Bottom quad at the 4 corners of the 22° tilted solar panel aperture
+      const hw = 0.52;
+      const hl = 0.88;
+
+      // 4: Top-Left (-hw, -hl)
+      posArr[12] = -hw;
+      posArr[13] = landingY - (-hl) * sinTilt;
+      posArr[14] = -hl * cosTilt;
+      // 5: Top-Right (hw, -hl)
+      posArr[15] = hw;
+      posArr[16] = landingY - (-hl) * sinTilt;
+      posArr[17] = -hl * cosTilt;
+      // 6: Bottom-Right (hw, hl)
+      posArr[18] = hw;
+      posArr[19] = landingY - hl * sinTilt;
+      posArr[20] = hl * cosTilt;
+      // 7: Bottom-Left (-hw, hl)
+      posArr[21] = -hw;
+      posArr[22] = landingY - hl * sinTilt;
+      posArr[23] = hl * cosTilt;
+
+      this.lightVolume.geometry.attributes.position.needsUpdate = true;
+      this.lightVolume.geometry.computeVertexNormals();
+      this.lightVolume.material.opacity = Math.max(0.015, 0.08 * cosVal);
     }
 
     // 4. Update Fresnel Reflected Rays (Mirror reflection: θ_refl = θ_inc)
