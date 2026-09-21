@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
-  let isDarkTheme = false;
+  let isDarkTheme = true;
   let is4kEnabled = true;
 
   let currentSunAngle = 0;
@@ -224,8 +224,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize at 0° High Noon
   updateSolarGeneration(0);
 
-  // Set default visual presets: Light Studio & 4K Super Resolution
-  studio.setStudioTheme(false);
+  // Set default visual presets: Dark Studio & 4K Super Resolution
+  studio.setStudioTheme(true);
   studio.setSuperResolution(true);
 
   // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel

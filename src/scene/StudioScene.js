@@ -37,7 +37,7 @@ export class StudioScene {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.35;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -46,9 +46,9 @@ export class StudioScene {
 
   initScene() {
     this.scene = new THREE.Scene();
-    // Neutral studio gray background
-    this.scene.background = new THREE.Color(0xdce0e6);
-    this.scene.fog = new THREE.Fog(0xdce0e6, 6, 18);
+    // Dark studio background (0x131518)
+    this.scene.background = new THREE.Color(0x131518);
+    this.scene.fog = new THREE.Fog(0x131518, 6, 18);
   }
 
   initCamera() {
@@ -177,7 +177,7 @@ export class StudioScene {
     floorGeo.rotateX(-Math.PI / 2);
 
     const shadowMat = new THREE.ShadowMaterial({
-      opacity: 0.22
+      opacity: 0.5
     });
     this.shadowFloor = new THREE.Mesh(floorGeo, shadowMat);
     this.shadowFloor.position.y = -1.45;
