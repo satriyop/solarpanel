@@ -168,6 +168,9 @@ window.addEventListener('DOMContentLoaded', () => {
       // Update 3D studio sun position and get cosine incident factor
       const cosVal = studio.setSunAngle(angle);
 
+      // Update 3D silicon cell photon absorption glow
+      solarPanel.setSunAbsorption(cosVal);
+
       // Real-time PV power calculation: P = 410W * cos(angle)
       const watts = Math.round(410 * Math.max(0, cosVal));
       const imp = (11.5 * Math.max(0, cosVal)).toFixed(1);

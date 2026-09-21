@@ -356,7 +356,7 @@ export class SolarPanelModel {
     const startX = -totalW / 2 + cellWidth / 2;
     const startZ = -totalL / 2 + cellLength / 2;
 
-    const cellMat = new THREE.MeshPhysicalMaterial({
+    this.cellMat = new THREE.MeshPhysicalMaterial({
       map: this.cellTexture,
       normalMap: this.cellNormalMap,
       normalScale: new THREE.Vector2(0.9, 0.9),
@@ -366,6 +366,7 @@ export class SolarPanelModel {
       clearcoatRoughness: 0.06,
       envMapIntensity: 2.4
     });
+    const cellMat = this.cellMat;
 
     const cellGeo = new THREE.PlaneGeometry(cellWidth, cellLength);
     cellGeo.rotateX(-Math.PI / 2); // Lay flat on X-Z plane
@@ -718,5 +719,15 @@ export class SolarPanelModel {
         });
       }
     });
+  }
+
+  /**
+   * Modulate cell wafer absorption luminescence based on incident sunlight angle
+   */
+  setSunAbsorption(cosVal) {
+    if (this.cellMat) {
+      this.cellMat.emissive = new THREE.Color(0x0284c7);
+      this.cellMat.emissiveIntensity = Math.max(0, 0.28 * Math.pow(cosVal, 1.2));
+    }
   }
 }
