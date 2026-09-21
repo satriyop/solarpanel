@@ -456,6 +456,26 @@ export class AnimationController {
         title: 'Home Battery Energy Storage System (10.5kWh BESS)',
         mat: 'Lithium Iron Phosphate (LiFePO4) Cells in NEMA 3R Enclosure',
         detail: '10.5kWh Usable Storage • 5.0kW Continuous Output • Peak Shaving for PLN R-1/TR Tariff • Household Backup during PLN Blackout (Mati Lampu) • SNI / IEC 62619 Certified'
+      },
+      plnSmartMeter: {
+        title: 'Meteran Pintar PLN AMI (Permen ESDM 2/2024)',
+        mat: 'Smart Meter AMI Single-Phase 220V/50Hz (SPLN D3.022-1:2020)',
+        detail: 'Permen ESDM No. 2/2024 menghapus skema net-metering kWh Exim (ekspor Rp 0 / tidak ada kuota pengurang tagihan). Dilengkapi modul komunikasi jarak jauh (AMI) dan segel metrologi legal RI.'
+      },
+      zeroExportSensor: {
+        title: 'Power Sensor DDSU666 & CT Clamp (Zero-Export)',
+        mat: 'Split-Core CT (100A/40mA) + RS485 Modbus Communication',
+        detail: 'Membaca konsumsi daya rumah secara instan. Memerintahkan inverter modulasi daya output surya seketika agar ekspor ke PLN selalu 0.00 kW, mencegah trip breaker dan penalti PLN.'
+      },
+      atsSwitch: {
+        title: 'Automatic Transfer Switch (ATS) 10ms (Anti-Islanding)',
+        mat: 'Dual-Power Changeover Mechanism • Transfer Time <10ms • IEC 60947-6-1',
+        detail: 'Isolasi fisik galvanis (air-gap) antara PLN dan PLTS Atap saat blackout. Mencegah bahaya sengatan listrik balik (backfeed) ke teknisi perbaikan PLN serta mengaktifkan EPS microgrid cadangan.'
+      },
+      acCombiner: {
+        title: 'Panel Proteksi AC & Distribusi Esensial (PUIL 2011)',
+        mat: 'Enclosure IP65 • SPD Type 2 (40kA) + RCD 30mA + MCB Sirkuit',
+        detail: 'Surge Protective Device (SPD 275V Uc) perlindungan sambaran petir induksi jaringan PLN, RCD 30mA proteksi sengatan arus bocor tanah manusia, serta pembagi beban esensial (kulkas, lampu, pompa, WiFi).'
       }
     };
 
@@ -470,6 +490,37 @@ export class AnimationController {
 
   setBatteryStorage(batteryStorage) {
     this.batteryStorage = batteryStorage;
+  }
+
+  setPlnDistribution(plnDistribution) {
+    this.plnDistribution = plnDistribution;
+  }
+
+  /**
+   * Cinematic Macro Zoom for the PLN Grid Distribution Board
+   */
+  focusCameraOnPlnDistribution(duration = 1.4) {
+    this.isAutoOrbit = false;
+
+    const targetPos = { x: 1.15, y: 0.18, z: 0.02 };
+    const camPos = { x: 1.45, y: 0.36, z: 0.96 };
+
+    gsap.to(this.scene.controls.target, {
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
+      duration: duration,
+      ease: 'power3.out'
+    });
+
+    gsap.to(this.scene.camera.position, {
+      x: camPos.x,
+      y: camPos.y,
+      z: camPos.z,
+      duration: duration,
+      ease: 'power3.out',
+      onUpdate: () => this.scene.controls.update()
+    });
   }
 
   /**
@@ -565,6 +616,27 @@ export class AnimationController {
         if (child.isMesh && child.material.visible !== false && child.userData.isBatteryStorage) {
           child.userData.parentLayerId = 'batteryStorage';
           meshes.push(child);
+        }
+      });
+    }
+
+    // Also collect PLN Distribution Board meshes if active
+    if (this.plnDistribution && this.plnDistribution.isVisible) {
+      this.plnDistribution.group.traverse(child => {
+        if (child.isMesh && child.material.visible !== false) {
+          if (child.userData.isPlnSmartMeter) {
+            child.userData.parentLayerId = 'plnSmartMeter';
+            meshes.push(child);
+          } else if (child.userData.isZeroExportSensor) {
+            child.userData.parentLayerId = 'zeroExportSensor';
+            meshes.push(child);
+          } else if (child.userData.isAtsSwitch) {
+            child.userData.parentLayerId = 'atsSwitch';
+            meshes.push(child);
+          } else if (child.userData.isAcCombiner) {
+            child.userData.parentLayerId = 'acCombiner';
+            meshes.push(child);
+          }
         }
       });
     }

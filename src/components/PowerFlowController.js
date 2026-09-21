@@ -19,6 +19,7 @@ export class PowerFlowController {
     this.model.group.add(this.group);
 
     this.isVisible = false;
+    this.gridTopology = 'ongrid'; // 'ongrid' or 'offgrid'
     this.clock = new THREE.Clock();
     this.time = 0;
 
@@ -194,6 +195,95 @@ export class PowerFlowController {
     }
   }
 
+  setPlnDistribution(plnDistribution) {
+    this.plnDistribution = plnDistribution;
+    if (!plnDistribution) return;
+
+    // 1. Incoming PLN Utility Service Feeder Particles (Grid to Meter)
+    this.plnGridParticles = [];
+    for (let i = 0; i < 8; i++) {
+      const sprite = new THREE.Sprite(this.acMat.clone());
+      sprite.material.color.setHex(0x10b981); // Bright utility green
+      sprite.scale.set(0.046, 0.046, 1);
+      sprite.visible = (this.isVisible && plnDistribution.isVisible && this.gridTopology !== 'offgrid');
+      plnDistribution.group.add(sprite);
+      this.plnGridParticles.push({
+        sprite,
+        t: i / 8,
+        speed: 0.32
+      });
+    }
+
+    // 2. RS485 Modbus Communication Particles (DDSU666 to Central Inverter)
+    this.rs485Particles = [];
+    for (let i = 0; i < 6; i++) {
+      const sprite = new THREE.Sprite(this.acMat.clone());
+      sprite.material.color.setHex(0x38bdf8); // Sky blue data packets
+      sprite.scale.set(0.026, 0.026, 1);
+      sprite.visible = (this.isVisible && plnDistribution.isVisible && this.gridTopology !== 'offgrid');
+      plnDistribution.group.add(sprite);
+      this.rs485Particles.push({
+        sprite,
+        t: i / 6,
+        speed: 0.58
+      });
+    }
+
+    // 3. Central Inverter AC Interconnect to ATS & Combiner
+    this.inverterToPlnParticles = [];
+    for (let i = 0; i < 10; i++) {
+      const sprite = new THREE.Sprite(this.acMat.clone());
+      sprite.material.color.setHex(0x06b6d4); // Cyan AC power
+      sprite.scale.set(0.046, 0.046, 1);
+      sprite.visible = (this.isVisible && plnDistribution.isVisible);
+      plnDistribution.group.add(sprite);
+      this.inverterToPlnParticles.push({
+        sprite,
+        t: i / 10,
+        speed: 0.35
+      });
+    }
+
+    // 4. Essential Loads Circuit Feeder (Combiner down to household circuits)
+    this.essentialLoadsParticles = [];
+    for (let i = 0; i < 8; i++) {
+      const sprite = new THREE.Sprite(this.acMat.clone());
+      sprite.material.color.setHex(0x38bdf8);
+      sprite.scale.set(0.046, 0.046, 1);
+      sprite.visible = (this.isVisible && plnDistribution.isVisible);
+      plnDistribution.group.add(sprite);
+      this.essentialLoadsParticles.push({
+        sprite,
+        t: i / 8,
+        speed: 0.36
+      });
+    }
+  }
+
+  /**
+   * Switch grid operational mode: 'ongrid' (PLN Grid Normal) vs 'offgrid' (EPS Islanded Backup)
+   */
+  setGridTopology(topology) {
+    this.gridTopology = topology; // 'ongrid' or 'offgrid'
+    const isOffGrid = (topology === 'offgrid');
+
+    if (this.plnGridParticles) {
+      this.plnGridParticles.forEach(p => p.sprite.visible = (this.isVisible && !isOffGrid));
+    }
+    if (this.rs485Particles) {
+      this.rs485Particles.forEach(p => p.sprite.visible = (this.isVisible && !isOffGrid));
+    }
+    if (this.plnDistribution) {
+      this.plnDistribution.setGridMode(topology);
+    }
+    if (this.centralInverter) {
+      this.centralInverter.updateTelemetry(undefined, topology);
+      if (this.centralInverter.statusLedMat) {
+        this.centralInverter.statusLedMat.color.setHex(isOffGrid ? 0xf59e0b : 0x10b981);
+      }
+    }
+  }
+
   /**
    * Switch active power flow path between Microinverter (MLPE) and Central Inverter (String)
    */
@@ -241,6 +331,18 @@ export class PowerFlowController {
     }
     if (this.batteryChargeParticles && this.batteryStorage) {
       this.batteryChargeParticles.forEach(p => p.sprite.visible = (visible && this.batteryStorage.isVisible));
+    }
+    if (this.plnGridParticles) {
+      this.plnGridParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && this.gridTopology !== 'offgrid'));
+    }
+    if (this.rs485Particles) {
+      this.rs485Particles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && this.gridTopology !== 'offgrid'));
+    }
+    if (this.inverterToPlnParticles) {
+      this.inverterToPlnParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible));
+    }
+    if (this.essentialLoadsParticles) {
+      this.essentialLoadsParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible));
     }
 
     if (!visible) {
@@ -361,7 +463,7 @@ export class PowerFlowController {
       // D. Pulse Central Inverter status ring & update live telemetry
       const pulseIntensity = 0.6 + 0.4 * Math.sin(this.time * (5.0 * powerFactor));
       this.centralInverter.setLedPulse(pulseIntensity * powerFactor);
-      this.centralInverter.updateTelemetry(currentWatts);
+      this.centralInverter.updateTelemetry(currentWatts, this.gridTopology);
 
       // E. Animate Battery Storage Charging Particles (Inverter to Battery)
       if (this.batteryStorage && this.batteryStorage.isVisible) {
@@ -379,6 +481,75 @@ export class PowerFlowController {
         this.batteryStorage.setLedPulse(chargePulse);
       } else if (this.batteryChargeParticles) {
         this.batteryChargeParticles.forEach(p => p.sprite.visible = false);
+      }
+
+      // F. Animate PLN Grid Distribution Board Particles
+      if (this.plnDistribution && this.plnDistribution.isVisible) {
+        const isOffGrid = (this.gridTopology === 'offgrid');
+
+        // 1. PLN Utility Feeder Line Particles (Incoming from grid to meter)
+        if (this.plnGridParticles) {
+          this.plnGridParticles.forEach((p) => {
+            if (isOffGrid) {
+              p.sprite.visible = false;
+            } else {
+              p.sprite.visible = this.isVisible;
+              p.t = (p.t + p.speed * delta) % 1.0;
+              const py = 0.74 - p.t * 0.46;
+              p.sprite.position.set(-0.16, py, 0.01);
+              p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * powerFactor;
+            }
+          });
+        }
+
+        // 2. RS485 Modbus Telemetry Data Pulses (DDSU666 to Central Inverter)
+        if (this.rs485Particles && this.plnDistribution.rs485ConduitCurve) {
+          const pt = new THREE.Vector3();
+          this.rs485Particles.forEach((p) => {
+            if (isOffGrid) {
+              p.sprite.visible = false;
+            } else {
+              p.sprite.visible = this.isVisible;
+              p.t = (p.t + p.speed * delta) % 1.0;
+              this.plnDistribution.rs485ConduitCurve.getPoint(p.t, pt);
+              p.sprite.position.copy(pt);
+              p.sprite.material.opacity = 0.7 + 0.3 * Math.sin(this.time * 25.0 + p.t * 10.0);
+            }
+          });
+        }
+
+        // 3. Central Inverter AC Power flow to ATS & Combiner
+        if (this.inverterToPlnParticles && this.plnDistribution.invAcConduitCurve) {
+          const pt = new THREE.Vector3();
+          this.inverterToPlnParticles.forEach((p) => {
+            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+            this.plnDistribution.invAcConduitCurve.getPoint(1.0 - p.t, pt);
+            p.sprite.position.copy(pt);
+            p.sprite.visible = this.isVisible;
+
+            if (isOffGrid) {
+              p.sprite.material.color.setHex(0xf59e0b); // EPS Islanded Backup
+            } else {
+              p.sprite.material.color.setHex(0x06b6d4); // AC Self-Consumption
+            }
+            p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * powerFactor;
+          });
+        }
+
+        // 4. Essential Loads Circuit Distribution (Combiner down to house circuits)
+        if (this.essentialLoadsParticles) {
+          this.essentialLoadsParticles.forEach((p) => {
+            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+            p.sprite.position.set(0.16, -0.28 - p.t * 0.30, 0.01);
+            p.sprite.visible = this.isVisible;
+            if (isOffGrid) {
+              p.sprite.material.color.setHex(0xf59e0b); // EPS backup
+            } else {
+              p.sprite.material.color.setHex(0x38bdf8); // Clean self-consumption
+            }
+            p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * powerFactor;
+          });
+        }
       }
     }
   }

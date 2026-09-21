@@ -778,3 +778,103 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Grid Operational Topology Switcher Dock (EE Principles) */
+.grid-mode-selector {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-hud);
+  pointer-events: auto;
+  gap: 4px;
+}
+
+.studio-dark .grid-mode-selector {
+  background: rgba(15, 23, 42, 0.78);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.grid-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #64748b;
+  text-align: left;
+}
+
+.studio-dark .grid-mode-btn {
+  color: #94a3b8;
+}
+
+.grid-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: #0f172a;
+}
+
+.studio-dark .grid-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+}
+
+.grid-mode-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.studio-dark .grid-mode-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.mode-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.grid-mode-btn.active .ongrid-led {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981, 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.grid-mode-btn.active .offgrid-led {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b, 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.mode-label-grp {
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.mode-sub {
+  font-size: 9.5px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+

@@ -496,11 +496,11 @@ export class CentralInverterModel {
   }
 
   /**
-   * Dynamically updates OLED screen telemetry and stats based on current solar watts
+   * Dynamically updates OLED screen telemetry and stats based on current solar watts and mode
    */
-  updateTelemetry(watts) {
+  updateTelemetry(watts, mode) {
     if (this.screenTex && this.screenTex.updateScreen) {
-      this.screenTex.updateScreen(watts);
+      this.screenTex.updateScreen(watts, mode);
     }
   }
 

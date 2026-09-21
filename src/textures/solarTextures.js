@@ -491,15 +491,20 @@ export function createCentralInverterScreenTexture() {
   const ctx = canvas.getContext('2d');
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
+  let lastWatts = 415;
+  let lastMode = 'ongrid';
 
-  function renderScreen(watts = 415) {
+  function renderScreen(watts = 415, mode = 'ongrid') {
+    lastWatts = watts;
+    lastMode = mode;
+    const isOffGrid = (mode === 'offgrid');
+
     // Background: Deep obsidian glass
     ctx.fillStyle = '#060a12';
     ctx.fillRect(0, 0, 512, 256);
 
     // Subtle LCD pixel raster grid
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.03)';
+    ctx.fillStyle = isOffGrid ? 'rgba(245, 158, 11, 0.03)' : 'rgba(16, 185, 129, 0.03)';
     for (let y = 0; y < 256; y += 4) {
       ctx.fillRect(0, y, 512, 2);
     }
@@ -511,22 +516,21 @@ export function createCentralInverterScreenTexture() {
     // Online Status Indicator Dot & Pill
     ctx.beginPath();
     ctx.arc(28, 26, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#10b981'; // Bright green
+    ctx.fillStyle = isOffGrid ? '#f59e0b' : '#10b981'; // Amber for EPS Islanded, Green for On-Grid
     ctx.fill();
 
     ctx.font = 'bold 13px "JetBrains Mono", monospace, sans-serif';
-    ctx.fillStyle = '#10b981';
-    ctx.fillText('PLN GRID-TIED ONLINE', 42, 30);
+    ctx.fillStyle = isOffGrid ? '#f59e0b' : '#10b981';
+    ctx.fillText(isOffGrid ? 'EPS ISLANDED (V-f MICROGRID)' : 'PLN GRID-TIED ONLINE', 42, 30);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px "JetBrains Mono", monospace, sans-serif';
-    ctx.fillText('MPPT 1 & 2 • 220V/50Hz', 220, 30);
+    ctx.fillText(isOffGrid ? 'PLN OFF (0V) • BESS 51.2V' : '220V/50Hz • ZERO-EXPORT', isOffGrid ? 280 : 250, 30);
     ctx.fillText('12:45 WIB', 420, 30);
 
-    // Scale residential array wattage (simulate a typical 4kW residential string array based on 415W Tier-1 panel)
-    const arrayMultiplier = 9.7; // ~4.0 kW array at 415W panel reference (10-panel string)
+    // Scale residential array wattage
+    const arrayMultiplier = 9.7; // ~4.0 kW array at 415W panel reference
     const totalWatts = Math.round(watts * arrayMultiplier);
-    const kwStr = (totalWatts / 1000).toFixed(2);
     const eff = 98.4;
     const acKw = ((totalWatts * eff) / 100000).toFixed(2);
 
@@ -536,12 +540,18 @@ export function createCentralInverterScreenTexture() {
     ctx.fillText(`${acKw}`, 24, 106);
 
     ctx.font = 'bold 22px "JetBrains Mono", monospace, sans-serif';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText('kW AC', 168, 106);
+    ctx.fillStyle = isOffGrid ? '#f59e0b' : '#38bdf8';
+    ctx.fillText(isOffGrid ? 'kW EPS' : 'kW AC', 168, 106);
 
     ctx.font = '12px sans-serif';
     ctx.fillStyle = '#64748b';
-    ctx.fillText('OUTPUT DAYA PLTS ATAP (PAC) KE BEBAN & PLN', 24, 126);
+    ctx.fillText(
+      isOffGrid 
+        ? 'DAYA CADANGAN EPS KE BEBAN ESENSIAL (ISOLASI PLN)' 
+        : 'OUTPUT DAYA MANDIRI (SELF-CONSUMPTION) & ZERO-EXPORT', 
+      24, 
+      126
+    );
 
     // Horizontal divider
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
@@ -556,8 +566,8 @@ export function createCentralInverterScreenTexture() {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = '#64748b';
     ctx.fillText('DC INPUT (V/I)', 24, colY);
-    ctx.fillText('TEGANGAN PLN', 150, colY);
-    ctx.fillText('DAY YIELD', 270, colY);
+    ctx.fillText(isOffGrid ? 'TEGANGAN EPS' : 'TEGANGAN PLN', 150, colY);
+    ctx.fillText(isOffGrid ? 'BESS SOC' : 'DAY YIELD', 270, colY);
     ctx.fillText('EFISIENSI CEC', 380, colY);
 
     ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
@@ -566,8 +576,8 @@ export function createCentralInverterScreenTexture() {
     const dcV = (380 + (watts / 415) * 35).toFixed(0);
     const dcA = ((totalWatts / dcV) || 0).toFixed(1);
     ctx.fillText(`${dcV}V / ${dcA}A`, 24, colY + 22);
-    ctx.fillText('220V / 50Hz', 150, colY + 22);
-    ctx.fillText('18.4 kWh', 270, colY + 22);
+    ctx.fillText(isOffGrid ? '220V (Synth)' : '220V / 50Hz', 150, colY + 22);
+    ctx.fillText(isOffGrid ? '92% (51.2V)' : '18.4 kWh', 270, colY + 22);
 
     ctx.fillStyle = '#10b981';
     ctx.fillText('98.4%', 380, colY + 22);
@@ -579,14 +589,20 @@ export function createCentralInverterScreenTexture() {
     ctx.fillRect(20, 218, barWidth, 14);
 
     const grad = ctx.createLinearGradient(20, 0, 20 + barWidth * fillRatio, 0);
-    grad.addColorStop(0, '#0284c7');
-    grad.addColorStop(0.7, '#06b6d4');
-    grad.addColorStop(1, '#10b981');
+    if (isOffGrid) {
+      grad.addColorStop(0, '#f59e0b');
+      grad.addColorStop(0.7, '#fbbf24');
+      grad.addColorStop(1, '#10b981');
+    } else {
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(0.7, '#06b6d4');
+      grad.addColorStop(1, '#10b981');
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(20, 218, barWidth * fillRatio, 14);
 
     // High-tech screen border glow
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.strokeStyle = isOffGrid ? 'rgba(245, 158, 11, 0.35)' : 'rgba(56, 189, 248, 0.25)';
     ctx.lineWidth = 2;
     ctx.strokeRect(2, 2, 508, 252);
 
@@ -594,8 +610,8 @@ export function createCentralInverterScreenTexture() {
   }
 
   // Initial render
-  renderScreen(415);
-  texture.updateScreen = renderScreen;
+  renderScreen(415, 'ongrid');
+  texture.updateScreen = (watts, mode) => renderScreen(watts ?? lastWatts, mode ?? lastMode);
 
   return texture;
 }
@@ -876,6 +892,287 @@ export function createBatteryBmsTexture() {
     ctx.fillStyle = col;
     ctx.fill();
   });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+// 12. Authentic Indonesian PLN Smart Meter AMI Texture (512x512)
+export function createPlnSmartMeterTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Clean industrial white-gray housing
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Outer border
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(8, 8, 496, 496);
+
+  // Top header: PLN corporate blue
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(16, 16, 480, 72);
+
+  // PLN Lightning bolt logo badge (Yellow shield + red bolt)
+  ctx.fillStyle = '#facc15'; // Golden yellow shield
+  ctx.beginPath();
+  ctx.rect(32, 28, 44, 48);
+  ctx.fill();
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Red lightning bolt inside shield
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath();
+  ctx.moveTo(56, 30);
+  ctx.lineTo(40, 52);
+  ctx.lineTo(52, 52);
+  ctx.lineTo(44, 72);
+  ctx.lineTo(66, 48);
+  ctx.lineTo(54, 48);
+  ctx.closePath();
+  ctx.fill();
+
+  // Header Typography
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px "JetBrains Mono", sans-serif';
+  ctx.fillText('PT PLN (PERSERO)', 90, 48);
+  ctx.font = '13px "JetBrains Mono", sans-serif';
+  ctx.fillStyle = '#bae6fd';
+  ctx.fillText('SMART METER AMI (Permen ESDM 2/2024)', 90, 70);
+
+  // Optical Communication Port Ring (for handheld scanner)
+  ctx.beginPath();
+  ctx.arc(440, 52, 18, 0, Math.PI * 2);
+  ctx.fillStyle = '#1e293b';
+  ctx.fill();
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#dc2626'; // IR emitter dot
+  ctx.beginPath();
+  ctx.arc(436, 52, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8'; // IR sensor dot
+  ctx.beginPath();
+  ctx.arc(444, 52, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Digital LCD Display Bezel
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(32, 108, 448, 175);
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(32, 108, 448, 175);
+
+  // LCD Background (Subtle olive/matrix glow)
+  ctx.fillStyle = '#091512';
+  ctx.fillRect(40, 116, 432, 159);
+
+  // LCD Telemetry Matrix
+  ctx.font = 'bold 13px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#10b981';
+  ctx.fillText('● AMI ONLINE • RF-MESH / GSM CONNECTED', 52, 138);
+
+  ctx.font = 'bold 28px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText('00184.6', 52, 176);
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillText('kWh IMPOR', 215, 176);
+
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('[2.8.0] EKSPOR: 00000.0 kWh (ZERO-EXPORT)', 52, 204);
+
+  // Real-time grid parameters
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#facc15';
+  ctx.fillText('U: 220.4V   I: 8.24A   F: 50.0Hz   Cosφ: 0.98', 52, 234);
+
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('TIDAK ADA PENGURANG TAGIHAN EKSPOR • SELF-CONSUMPTION 100%', 52, 258);
+
+  // Customer ID & Serial Number Card
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(32, 304, 448, 120);
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(32, 304, 448, 120);
+
+  ctx.font = 'bold 15px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('ID PELANGGAN : 5382 1094 8821', 48, 332);
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#475569';
+  ctx.fillText('TARIF/DAYA   : R-1/TR 3.500 VA (1-PHASE 220V)', 48, 356);
+  ctx.fillText('NOMOR METER  : 24-AMI-PLN-998241', 48, 380);
+
+  // Metrology Legal Stamp Badge
+  ctx.fillStyle = '#047857';
+  ctx.beginPath();
+  ctx.arc(430, 360, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('METROLOGI', 430, 356);
+  ctx.fillText('LEGAL RI', 430, 368);
+  ctx.textAlign = 'left';
+
+  // Barcode
+  ctx.fillStyle = '#0f172a';
+  for (let b = 0; b < 38; b++) {
+    const bx = 48 + b * 8.5;
+    const bw = (b % 4 === 0 || b % 5 === 0) ? 5 : 2;
+    ctx.fillRect(bx, 396, bw, 20);
+  }
+
+  // Bottom Warning Decal & Lead Seal Simulation
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(32, 440, 448, 52);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.strokeRect(32, 440, 448, 52);
+
+  ctx.fillStyle = '#dc2626';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('PERINGATAN: MERUSAK SEGEL METERAN DIKENAKAN SANKSI HUKUM', 48, 462);
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Standar SPLN D3.022-1:2020 • Segel Timah Terpasang', 48, 480);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+// 13. Automatic Transfer Switch (ATS) Faceplate Texture (512x256)
+export function createAtsSwitchTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Industrial dark slate housing
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(6, 6, 500, 244);
+
+  // Header Title
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 20px "JetBrains Mono", sans-serif';
+  ctx.fillText('AUTOMATIC TRANSFER SWITCH (ATS)', 24, 40);
+
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Dual-Power Changeover Controller • Transfer Time <10ms • IEC 60947-6-1', 24, 62);
+
+  // Divider line
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(24, 76);
+  ctx.lineTo(488, 76);
+  ctx.stroke();
+
+  // Schematic Diagram: PLN Grid vs EPS Backup
+  // Position I (PLN Grid)
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+  ctx.fillRect(24, 94, 215, 96);
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(24, 94, 215, 96);
+
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillText('POSISI I: PLN GRID (NORMAL)', 36, 122);
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('Tegangan: 220V 50Hz', 36, 146);
+  ctx.fillText('Status: GRID-TIED ACTIVE', 36, 168);
+
+  // Position II (Inverter EPS Backup)
+  ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+  ctx.fillRect(265, 94, 223, 96);
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(265, 94, 223, 96);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 14px "JetBrains Mono", monospace';
+  ctx.fillText('POSISI II: INVERTER EPS (ISLANDED)', 277, 122);
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('Tegangan: 220V 50Hz (V-f)', 277, 146);
+  ctx.fillText('Status: BESS BACKUP (ISOLASI PLN)', 277, 168);
+
+  // Footer Warning: Air-gap galvanic isolation
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 11.5px sans-serif';
+  ctx.fillText('🛡️ PROTEKSI ANTI-ISLANDING: Memutus kontak PLN saat blackout demi keselamatan teknisi.', 24, 226);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
+// 14. Zero-Export Smart Energy Meter (DDSU666) Faceplate Texture (256x256)
+export function createZeroExportSensorTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // White DIN-rail meter face
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, 256, 256);
+
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, 248, 248);
+
+  // Brand Header
+  ctx.fillStyle = '#0284c7';
+  ctx.font = 'bold 16px "JetBrains Mono", sans-serif';
+  ctx.fillText('DDSU666', 20, 32);
+
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Smart Power Sensor (Zero-Export)', 20, 50);
+
+  // LCD Screen
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(20, 65, 216, 90);
+
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.fillText('0.00 kW', 32, 100);
+
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillText('GRID EXPORT: ZERO', 32, 122);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('RS485: MODBUS ACTIVE', 32, 142);
+
+  // CT Clamp Indicator
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('CT SENSOR: 100A / 40mA', 20, 185);
+
+  ctx.fillStyle = '#475569';
+  ctx.font = '10px monospace';
+  ctx.fillText('Permen ESDM 2/2024 Compliant', 20, 205);
+  ctx.fillText('Single Phase 220V 50Hz', 20, 222);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;

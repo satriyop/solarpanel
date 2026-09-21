@@ -4,6 +4,7 @@ import { AnimationController } from './animation/AnimationController.js';
 import { PowerFlowController } from './components/PowerFlowController.js';
 import { CentralInverterModel } from './components/CentralInverterModel.js';
 import { BatteryStorageModel } from './components/BatteryStorageModel.js';
+import { PLNGridDistributionModel } from './components/PLNGridDistributionModel.js';
 
 // Initialize application on DOM content loaded
 window.addEventListener('DOMContentLoaded', () => {
@@ -17,25 +18,34 @@ window.addEventListener('DOMContentLoaded', () => {
   const solarPanel = new SolarPanelModel();
   studio.scene.add(solarPanel.group);
 
-  // 3. Initialize Wall-Mounted Central / Hybrid String Inverter (5.0kW)
+  // 3. Initialize Indonesian PLN Grid Distribution Board (Smart Meter AMI, Zero-Export DDSU666, ATS, AC Combiner)
+  const plnDistribution = new PLNGridDistributionModel();
+  studio.scene.add(plnDistribution.group);
+
+  // 4. Initialize Wall-Mounted Central / Hybrid String Inverter (5.0kW)
   const centralInverter = new CentralInverterModel();
   studio.scene.add(centralInverter.group);
 
-  // 4. Initialize Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)
+  // 5. Initialize Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)
   const batteryStorage = new BatteryStorageModel();
   studio.scene.add(batteryStorage.group);
 
-  // 5. Initialize Animation & Motion Controller
+  // 6. Initialize Animation & Motion Controller
   const anim = new AnimationController(solarPanel, studio, labelsContainer);
+  anim.setPlnDistribution(plnDistribution);
   anim.setCentralInverter(centralInverter);
   anim.setBatteryStorage(batteryStorage);
 
-  // 6. Initialize Electrical Power Flow Controller (DC to AC Conversion)
+  // 7. Initialize Electrical Power Flow Controller (DC to AC Conversion)
   const powerFlow = new PowerFlowController(solarPanel, studio);
+  powerFlow.setPlnDistribution(plnDistribution);
   powerFlow.setCentralInverter(centralInverter);
   powerFlow.setBatteryStorage(batteryStorage);
 
-  // 7. UI Elements
+  // 8. UI Elements
+  const btnModeOngrid = document.getElementById('btn-mode-ongrid');
+  const btnModeOffgrid = document.getElementById('btn-mode-offgrid');
+  const badgeGridMode = document.getElementById('badge-grid-mode');
   const btnStartFrame = document.getElementById('btn-start-frame');
   const btnEndFrame = document.getElementById('btn-end-frame');
   const sliderExplode = document.getElementById('slider-explode');
@@ -47,10 +57,12 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnTogglePower = document.getElementById('btn-toggle-power');
   const btnToggleInverterMode = document.getElementById('btn-toggle-inverter-mode');
   const labelInverterMode = document.getElementById('label-inverter-mode');
+  const btnTogglePln = document.getElementById('btn-toggle-pln');
   const btnToggleBattery = document.getElementById('btn-toggle-battery');
   const btnToggleView = document.getElementById('btn-toggle-view');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const pillInverter = document.getElementById('pill-inverter');
+  const pillPln = document.getElementById('pill-pln');
   const pillBattery = document.getElementById('pill-battery');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
@@ -62,6 +74,8 @@ window.addEventListener('DOMContentLoaded', () => {
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
   let isBatteryActive = false;
+  let isPlnActive = false;
+  let currentGridMode = 'ongrid'; // 'ongrid' or 'offgrid'
   let currentInverterMode = 'micro'; // 'micro' (rooftop MLPE) or 'central' (wall-mounted string)
   let isUndersideView = false;
   let currentWatts = 415;
@@ -106,7 +120,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 4. Update Central Inverter live telemetry if present
     if (centralInverter) {
-      centralInverter.updateTelemetry(watts);
+      centralInverter.updateTelemetry(watts, currentGridMode);
     }
   }
 
@@ -245,8 +259,70 @@ window.addEventListener('DOMContentLoaded', () => {
     }, duration);
   }
 
+  // Function to switch between Grid Operational Topologies (ON-GRID vs OFF-GRID / EPS)
+  function setGridMode(mode) {
+    currentGridMode = mode;
+    const isOffGrid = (mode === 'offgrid');
+
+    // Update top header mode buttons
+    if (btnModeOngrid) btnModeOngrid.classList.toggle('active', !isOffGrid);
+    if (btnModeOffgrid) btnModeOffgrid.classList.toggle('active', isOffGrid);
+    if (badgeGridMode) badgeGridMode.textContent = isOffGrid ? 'OFF-GRID EPS' : 'ON-GRID PLN';
+
+    if (isOffGrid) {
+      // 1. Off-grid mode mandates Central Hybrid Inverter with ATS changeover
+      if (currentInverterMode !== 'central') {
+        setInverterArchitecture('central');
+      }
+
+      // 2. Ensure PLN Grid Distribution Board is visible to see ATS Position II and disconnect
+      isPlnActive = true;
+      plnDistribution.setVisible(true);
+      if (btnTogglePln) btnTogglePln.classList.add('active');
+      if (pillPln) pillPln.style.display = 'inline-block';
+
+      // 3. BESS Battery Storage is ENFORCED & MANDATORY (Grid-Forming V-f stabilizer)
+      isBatteryActive = true;
+      batteryStorage.setVisible(true);
+      batteryStorage.setInterconnectVisible(true);
+      if (btnToggleBattery) {
+        btnToggleBattery.classList.add('active');
+        btnToggleBattery.disabled = true;
+        btnToggleBattery.classList.add('btn-disabled');
+        btnToggleBattery.title = 'BESS wajib aktif pada mode Off-Grid sebagai pembentuk frekuensi (Grid-Forming V-f)';
+      }
+      if (pillBattery) pillBattery.style.display = 'inline-block';
+
+      // 4. Update physical models & particle telemetry
+      plnDistribution.setGridMode('offgrid');
+      powerFlow.setGridTopology('offgrid');
+      centralInverter.updateTelemetry(currentWatts, 'offgrid');
+
+      showToast('⚡ <strong>Mode OFF-GRID / EPS Mandiri Aktif:</strong> PLN padam (0V). ATS memutus kontak fisik galvanis PLN (<10ms) sesuai IEC 62116. BESS 10.5kWh wajib aktif sebagai Grid-Forming penstabil tegangan 220V/50Hz untuk beban esensial.', 5500);
+    } else {
+      // 1. On-grid mode
+      plnDistribution.setGridMode('ongrid');
+      powerFlow.setGridTopology('ongrid');
+      centralInverter.updateTelemetry(currentWatts, 'ongrid');
+
+      // 2. Re-enable battery button if in central mode
+      if (currentInverterMode === 'central' && btnToggleBattery) {
+        btnToggleBattery.disabled = false;
+        btnToggleBattery.classList.remove('btn-disabled');
+        btnToggleBattery.title = 'Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)';
+      }
+
+      showToast('🌐 <strong>Mode ON-GRID PLN Aktif:</strong> Sinkronisasi frekuensi 50Hz (Grid-Following PLL) dengan PLN 220V. Sesuai <em>Permen ESDM No. 2/2024</em>, Zero-Export DDSU666 & CT membatasi ekspor ke PLN selalu 0.00 kW (100% konsumsi mandiri).', 5500);
+    }
+  }
+
   // Function to switch between Inverter Architectures (Microinverter vs Central String Inverter)
   function setInverterArchitecture(mode) {
+    if (mode === 'micro' && currentGridMode === 'offgrid') {
+      showToast('⚠️ <strong>Microinverter Memerlukan Grid:</strong> Microinverter grid-tied standar akan mengalami anti-islanding trip tanpa tegangan PLN 220V/50Hz. Kembalikan ke mode ON-GRID terlebih dahulu.', 4500);
+      return;
+    }
+
     currentInverterMode = mode;
     const isCentral = (mode === 'central');
 
@@ -262,7 +338,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // 4. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
     centralInverter.setVisible(isCentral);
 
-    // 4. Update HUD switcher button
+    // 5. Update PLN Distribution Board visibility when using wall equipment
+    isPlnActive = isCentral;
+    plnDistribution.setVisible(isCentral);
+    if (btnTogglePln) btnTogglePln.classList.toggle('active', isCentral);
+    if (pillPln) pillPln.style.display = isCentral ? 'inline-block' : 'none';
+
+    // 6. Update HUD switcher button
     if (btnToggleInverterMode) {
       btnToggleInverterMode.classList.toggle('active', isCentral);
     }
@@ -270,24 +352,26 @@ window.addEventListener('DOMContentLoaded', () => {
       labelInverterMode.textContent = isCentral ? 'Inverter: Central Hybrid (5kW 220V)' : 'Inverter: Micro (220V PLN)';
     }
 
-    // 5. Update Layer Pill label
+    // 7. Update Layer Pill label
     if (pillInverter) {
       pillInverter.textContent = isCentral ? '8. Central Inverter (5kW 220V)' : '8. Microinverter (220V)';
       pillInverter.dataset.layer = isCentral ? 'centralInverter' : 'inverter';
     }
 
-    // 6. Update Central Inverter live telemetry if active
+    // 8. Update Central Inverter live telemetry if active
     if (isCentral) {
-      centralInverter.updateTelemetry(currentWatts);
+      centralInverter.updateTelemetry(currentWatts, currentGridMode);
     }
 
-    // 7. Manage DC-Coupled Battery Storage availability
+    // 9. Manage DC-Coupled Battery Storage availability
     if (isCentral) {
       // In Central Hybrid Inverter mode, DC Battery Storage is enabled
       if (btnToggleBattery) {
-        btnToggleBattery.disabled = false;
-        btnToggleBattery.classList.remove('btn-disabled');
-        btnToggleBattery.title = 'Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)';
+        btnToggleBattery.disabled = (currentGridMode === 'offgrid');
+        if (currentGridMode !== 'offgrid') {
+          btnToggleBattery.classList.remove('btn-disabled');
+          btnToggleBattery.title = 'Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)';
+        }
       }
       if (batteryStorage) {
         batteryStorage.setInterconnectVisible(isBatteryActive);
@@ -313,6 +397,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Grid Mode Switcher Listeners
+  if (btnModeOngrid) {
+    btnModeOngrid.addEventListener('click', () => {
+      if (currentGridMode !== 'ongrid') setGridMode('ongrid');
+    });
+  }
+  if (btnModeOffgrid) {
+    btnModeOffgrid.addEventListener('click', () => {
+      if (currentGridMode !== 'offgrid') setGridMode('offgrid');
+    });
+  }
+
   // Inverter Architecture Switcher (Roof Microinverter vs Wall Central Inverter)
   if (btnToggleInverterMode) {
     btnToggleInverterMode.addEventListener('click', () => {
@@ -321,9 +417,26 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // PLN Grid Distribution Board Toggle
+  if (btnTogglePln) {
+    btnTogglePln.addEventListener('click', () => {
+      isPlnActive = !isPlnActive;
+      btnTogglePln.classList.toggle('active', isPlnActive);
+      plnDistribution.setVisible(isPlnActive);
+      if (pillPln) {
+        pillPln.style.display = isPlnActive ? 'inline-block' : 'none';
+      }
+    });
+  }
+
   // Home Battery Storage Toggle (10.5kWh LiFePO4 BESS)
   if (btnToggleBattery) {
     btnToggleBattery.addEventListener('click', () => {
+      if (currentGridMode === 'offgrid') {
+        showToast('⚠️ <strong>BESS Wajib Aktif di Mode Off-Grid:</strong> Baterai BESS adalah sumber pembentuk grid (Grid-Forming V-f) yang mutlak dibutuhkan untuk menstabilkan tegangan DC dan frekuensi AC saat PLN padam.', 4500);
+        return;
+      }
+
       // If user clicks in Microinverter mode, show educational toast notification
       if (currentInverterMode === 'micro') {
         showToast('💡 <strong>Baterai DC Nonaktif:</strong> Baterai 400V DC memerlukan arsitektur Central Hybrid Inverter untuk terhubung ke sistem PLTS Atap 220V PLN. Alihkan ke Central Inverter.');
@@ -427,6 +540,9 @@ window.addEventListener('DOMContentLoaded', () => {
       } else if (layerId === 'centralInverter') {
         solarPanel.focusLayer('all');
         anim.focusCameraOnCentralInverter();
+      } else if (layerId === 'plnDistribution') {
+        solarPanel.focusLayer('all');
+        anim.focusCameraOnPlnDistribution();
       } else {
         // 1. Isolate layer opacity
         solarPanel.focusLayer(layerId);
