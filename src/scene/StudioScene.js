@@ -544,6 +544,9 @@ export class StudioScene {
 
     // Initialize at 0° (High Noon)
     this.setSunAngle(0);
+
+    // Default to hidden so initial view focuses purely on solar panel component breakdown
+    this.setSunSimulatorVisible(false);
   }
 
   /**
@@ -551,6 +554,7 @@ export class StudioScene {
    * Visually animates parallel ray wavefronts, Fresnel specular reflections, and layer tracking!
    */
   setSunAngle(angleDeg) {
+    this.currentSunAngle = angleDeg;
     const rad = (angleDeg * Math.PI) / 180;
     const cosVal = Math.cos(rad);
     const sinVal = Math.sin(rad);
@@ -713,6 +717,29 @@ export class StudioScene {
   setIncidentGizmoVisible(visible) {
     if (this.incidentGizmo) {
       this.incidentGizmo.visible = visible;
+    }
+  }
+
+  /**
+   * Toggle Solar Irradiance 3D Simulation Elements Visibility
+   */
+  setSunSimulatorVisible(visible) {
+    this.sunSimulatorVisible = visible;
+    if (this.sunOrb) this.sunOrb.visible = visible;
+    if (this.sunArc) this.sunArc.visible = visible;
+    if (this.incomingBeamsGroup) this.incomingBeamsGroup.visible = visible;
+    if (this.reflectedBeamsGroup) this.reflectedBeamsGroup.visible = visible;
+
+    if (!visible) {
+      // Restore clean default studio softbox illumination
+      this.keyLight.position.set(4.0, 7.0, 4.5);
+      this.keyLight.target.position.set(0, 0.15, 0);
+      this.keyLight.target.updateMatrixWorld();
+      this.keyLight.intensity = 2.5;
+      this.keyLight.color.setRGB(1.0, 1.0, 1.0);
+    } else {
+      // Re-apply current sun angle lighting and beam calculations
+      this.setSunAngle(this.currentSunAngle !== undefined ? this.currentSunAngle : 0);
     }
   }
 

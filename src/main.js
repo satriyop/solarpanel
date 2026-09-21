@@ -26,14 +26,17 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnOrbitPan = document.getElementById('btn-orbit-pan');
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleGuides = document.getElementById('btn-toggle-guides');
+  const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const btnToggle4k = document.getElementById('btn-toggle-4k');
+  const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
   let isDarkTheme = true;
   let is4kEnabled = true;
+  let isSunSimulatorActive = false;
 
   let currentSunAngle = 0;
 
@@ -175,6 +178,23 @@ window.addEventListener('DOMContentLoaded', () => {
     btnToggleGuides.classList.toggle('active', visible);
   });
 
+  // Solar Irradiance Simulator Toggle (Sun Orb, Beams, HUD Widget)
+  if (btnToggleSun) {
+    btnToggleSun.addEventListener('click', () => {
+      isSunSimulatorActive = !isSunSimulatorActive;
+      btnToggleSun.classList.toggle('active', isSunSimulatorActive);
+      if (sunSimCard) {
+        sunSimCard.classList.toggle('active', isSunSimulatorActive);
+      }
+      studio.setSunSimulatorVisible(isSunSimulatorActive);
+      if (isSunSimulatorActive) {
+        updateSolarGeneration(currentSunAngle);
+      } else {
+        solarPanel.setSunAbsorption(1.0);
+      }
+    });
+  }
+
   // Studio Theme Toggle (Neutral Light Gray vs Dark Studio)
   btnToggleTheme.addEventListener('click', () => {
     isDarkTheme = !isDarkTheme;
@@ -227,6 +247,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // Set default visual presets: Dark Studio & 4K Super Resolution
   studio.setStudioTheme(true);
   studio.setSuperResolution(true);
+  studio.setSunSimulatorVisible(false);
+  solarPanel.setSunAbsorption(1.0);
 
   // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel
   autoCycleTimer = setTimeout(() => {
