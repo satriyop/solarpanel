@@ -443,9 +443,14 @@ export class StudioScene {
     this.keyLight.color.setRGB(1.0, 1.0 - warmFactor * 0.15, 1.0 - warmFactor * 0.35);
 
     // 3. Update Collimated Parallel Incoming Rays (originating from the Sun Orb)
+    const tiltRad = THREE.MathUtils.degToRad(22);
+    const sinTilt = Math.sin(tiltRad);
+    const cosTilt = Math.cos(tiltRad);
+    const panelNormal = new THREE.Vector3(0, cosTilt, sinTilt);
+
     if (this.incomingRays) {
       this.incomingRays.forEach(({ line, ox, oz }) => {
-        const target = new THREE.Vector3(ox, landingY, oz);
+        const target = new THREE.Vector3(ox, landingY - oz * sinTilt, oz * cosTilt);
         const source = new THREE.Vector3(
           target.x - rayDir.x * beamLength,
           target.y - rayDir.y * beamLength,
@@ -479,15 +484,11 @@ export class StudioScene {
 
     if (this.reflectedRays) {
       const reflLength = 2.4;
-      const reflDir = new THREE.Vector3(rayDir.x, -rayDir.y, rayDir.z).normalize();
+      const reflDir = rayDir.clone().reflect(panelNormal).normalize();
 
       this.reflectedRays.forEach(({ line, ox, oz }) => {
-        const start = new THREE.Vector3(ox, landingY, oz);
-        const end = new THREE.Vector3(
-          ox + reflDir.x * reflLength,
-          landingY + reflDir.y * reflLength,
-          oz + reflDir.z * reflLength
-        );
+        const start = new THREE.Vector3(ox, landingY - oz * sinTilt, oz * cosTilt);
+        const end = new THREE.Vector3().copy(start).addScaledVector(reflDir, reflLength);
 
         const posArr = line.geometry.attributes.position.array;
         posArr[0] = start.x;

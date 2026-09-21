@@ -38,8 +38,20 @@ export class SolarPanelModel {
       { id: 'inverter', name: '8. Microinverter & AC Trunk (MLPE)', assembledY: -0.09, explodedY: -1.18 }
     ];
 
+    // Authentic residential rooftop installation tilt angle (~22°)
+    // Tilts the top/rear of the panel upward so both the front cells and rear MLPE microinverter
+    // are naturally visible from 3/4 perspective
+    this.tiltAngle = THREE.MathUtils.degToRad(22);
+    this.group.rotation.x = this.tiltAngle;
+    this.group.position.set(0, 0.08, 0);
+
     this.initTextures();
     this.buildLayers();
+  }
+
+  setTiltAngle(angleDeg) {
+    this.tiltAngle = THREE.MathUtils.degToRad(angleDeg);
+    this.group.rotation.x = this.tiltAngle;
   }
 
   initTextures() {

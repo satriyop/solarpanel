@@ -31,6 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
   const btnTogglePower = document.getElementById('btn-toggle-power');
+  const btnToggleView = document.getElementById('btn-toggle-view');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
@@ -41,6 +42,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isDarkTheme = true;
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
+  let isUndersideView = false;
   let currentWatts = 410;
 
   let currentSunAngle = 0;
@@ -200,6 +202,18 @@ window.addEventListener('DOMContentLoaded', () => {
       isPowerFlowActive = !isPowerFlowActive;
       btnTogglePower.classList.toggle('active', isPowerFlowActive);
       powerFlow.setVisible(isPowerFlowActive);
+    });
+  }
+
+  // Camera View Toggle (Front Sun-Facing Cells vs Underside MLPE Microinverter & J-Box)
+  if (btnToggleView) {
+    btnToggleView.addEventListener('click', () => {
+      isUndersideView = !isUndersideView;
+      btnToggleView.classList.toggle('active', isUndersideView);
+      btnToggleView.innerHTML = isUndersideView
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Front View`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Underside View`;
+      anim.setCameraView(isUndersideView ? 'underside' : 'front');
     });
   }
 

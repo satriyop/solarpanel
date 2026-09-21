@@ -138,8 +138,11 @@ export class AnimationController {
       this.scene.camera.position.x = x;
       this.scene.camera.position.z = z;
       this.scene.camera.position.y = this.cameraHeight;
-      this.scene.camera.lookAt(0, 0.15, 0);
-      this.scene.controls.target.set(0, 0.15, 0);
+
+      const targetY = this.isUnderSideView ? -0.30 : 0.15;
+      const targetZ = this.isUnderSideView ? -0.10 : 0.0;
+      this.scene.camera.lookAt(0, targetY, targetZ);
+      this.scene.controls.target.set(0, targetY, targetZ);
     } else {
       // Sync angle with user orbital control
       this.cameraAngle = Math.atan2(this.scene.camera.position.z, this.scene.camera.position.x);
@@ -153,6 +156,53 @@ export class AnimationController {
     if (this.labelsVisible) {
       this.updateLabels();
     }
+  }
+
+  /**
+   * Switch camera view between Front (Sun-facing cells) and Underside (MLPE Microinverter & J-Box).
+   */
+  setCameraView(viewName, duration = 1.6) {
+    this.isUnderSideView = viewName === 'underside';
+    let targetPos, camPos;
+
+    if (this.isUnderSideView) {
+      // Cinematic low-angle inspection view looking up at microinverter, J-box, and AC trunk
+      targetPos = { x: 0, y: -0.30, z: -0.10 };
+      camPos = { x: 1.4, y: -0.90, z: -2.8 };
+    } else {
+      // Default isometric high-noon view
+      targetPos = { x: 0, y: 0.15, z: 0.0 };
+      camPos = { x: 2.6, y: 2.1, z: 3.4 };
+    }
+
+    this.isHoveringOrDragging = true; // temporarily pause auto-orbit during transition
+
+    gsap.to(this.scene.controls.target, {
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
+      duration: duration,
+      ease: 'power3.inOut'
+    });
+
+    gsap.to(this.scene.camera.position, {
+      x: camPos.x,
+      y: camPos.y,
+      z: camPos.z,
+      duration: duration,
+      ease: 'power3.inOut',
+      onUpdate: () => {
+        this.scene.controls.update();
+      },
+      onComplete: () => {
+        this.cameraAngle = Math.atan2(this.scene.camera.position.z, this.scene.camera.position.x);
+        this.cameraRadius = Math.sqrt(
+          this.scene.camera.position.x ** 2 + this.scene.camera.position.z ** 2
+        );
+        this.cameraHeight = this.scene.camera.position.y;
+        this.isHoveringOrDragging = false;
+      }
+    });
   }
 
   updateLabels() {
@@ -258,17 +308,23 @@ export class AnimationController {
         camPos = { x: -0.15, y: layerY + 0.42, z: 0.72 };
         break;
 
-      case 'jbox':
-        // Close-up underneath of IP68 junction box, bypass diodes, and MC4 leads
-        targetPos = { x: 0, y: layerY - 0.02, z: -0.45 };
-        camPos = { x: 0.32, y: layerY - 0.26, z: -0.22 };
+      case 'jbox': {
+        const jboxLayer = this.model.layers.find(l => l.id === 'jbox');
+        const pos = new THREE.Vector3();
+        if (jboxLayer) jboxLayer.object.getWorldPosition(pos);
+        targetPos = { x: pos.x, y: pos.y, z: pos.z };
+        camPos = { x: pos.x + 0.35, y: pos.y - 0.28, z: pos.z - 0.45 };
         break;
+      }
 
-      case 'inverter':
-        // Close-up underneath of MLPE microinverter heatsink fins, status LED, and MC4/AC connections
-        targetPos = { x: 0, y: layerY, z: 0.16 };
-        camPos = { x: 0.36, y: layerY - 0.22, z: 0.38 };
+      case 'inverter': {
+        const invLayer = this.model.layers.find(l => l.id === 'inverter');
+        const pos = new THREE.Vector3();
+        if (invLayer) invLayer.object.getWorldPosition(pos);
+        targetPos = { x: pos.x, y: pos.y, z: pos.z + 0.05 };
+        camPos = { x: pos.x + 0.38, y: pos.y - 0.26, z: pos.z - 0.48 };
         break;
+      }
     }
 
     gsap.to(this.scene.controls.target, {

@@ -16,7 +16,7 @@ export class PowerFlowController {
 
     this.group = new THREE.Group();
     this.group.visible = false;
-    this.scene.scene.add(this.group);
+    this.model.group.add(this.group);
 
     this.isVisible = false;
     this.clock = new THREE.Clock();
