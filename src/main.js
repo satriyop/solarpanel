@@ -1,6 +1,7 @@
 import { StudioScene } from './scene/StudioScene.js';
 import { SolarPanelModel } from './components/SolarPanelModel.js';
 import { AnimationController } from './animation/AnimationController.js';
+import { PowerFlowController } from './components/PowerFlowController.js';
 
 // Initialize application on DOM content loaded
 window.addEventListener('DOMContentLoaded', () => {
@@ -10,14 +11,17 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. Initialize 3D Studio Environment
   const studio = new StudioScene(canvasContainer);
 
-  // 2. Initialize Solar Panel Model (7 sequential photorealistic layers)
+  // 2. Initialize Solar Panel Model (8 sequential photorealistic layers)
   const solarPanel = new SolarPanelModel();
   studio.scene.add(solarPanel.group);
 
   // 3. Initialize Animation & Motion Controller
   const anim = new AnimationController(solarPanel, studio, labelsContainer);
 
-  // 4. UI Elements
+  // 4. Initialize Electrical Power Flow Controller (DC to AC Conversion)
+  const powerFlow = new PowerFlowController(solarPanel, studio);
+
+  // 5. UI Elements
   const btnStartFrame = document.getElementById('btn-start-frame');
   const btnEndFrame = document.getElementById('btn-end-frame');
   const sliderExplode = document.getElementById('slider-explode');
@@ -26,14 +30,18 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnOrbitPan = document.getElementById('btn-orbit-pan');
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
+  const btnTogglePower = document.getElementById('btn-toggle-power');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   const sunSimCard = document.querySelector('.sun-simulator-card');
   const layerPills = document.querySelectorAll('.layer-pill');
+  const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
   let isDarkTheme = true;
   let isSunSimulatorActive = false;
+  let isPowerFlowActive = false;
+  let currentWatts = 410;
 
   let currentSunAngle = 0;
 
@@ -59,12 +67,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const imp = (11.5 * relG).toFixed(1);
     // Real electrical power in Watts
     const watts = Math.min(410, Math.round(parseFloat(vmp) * parseFloat(imp)));
+    currentWatts = watts;
     const pct = Math.round((watts / 410) * 100);
 
     sunWattsVal.textContent = watts;
     sunImpVal.textContent = `Imp: ${imp}A`;
     if (sunVmpVal) sunVmpVal.textContent = `Vmp: ${vmp}V`;
     if (sunIamVal) sunIamVal.textContent = `IAM: ${Math.round(iam * 100)}%`;
+    if (mlpeAcWatts) mlpeAcWatts.textContent = `${Math.round(watts * 0.975)}W AC`;
     powerGaugeFill.style.width = `${pct}%`;
 
     // 3. Update 3D silicon wafer photon absorption glow
@@ -184,6 +194,15 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Power Flow Animation Toggle (DC from cells -> J-box -> Microinverter -> 240V AC to grid)
+  if (btnTogglePower) {
+    btnTogglePower.addEventListener('click', () => {
+      isPowerFlowActive = !isPowerFlowActive;
+      btnTogglePower.classList.toggle('active', isPowerFlowActive);
+      powerFlow.setVisible(isPowerFlowActive);
+    });
+  }
+
   // Studio Theme Toggle (Neutral Light Gray vs Dark Studio)
   btnToggleTheme.addEventListener('click', () => {
     isDarkTheme = !isDarkTheme;
@@ -266,6 +285,7 @@ window.addEventListener('DOMContentLoaded', () => {
     lastTime = now;
 
     anim.update(delta);
+    powerFlow.update(delta, currentWatts);
     studio.render();
   }
 

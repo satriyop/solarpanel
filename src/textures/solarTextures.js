@@ -394,3 +394,91 @@ export function createEVANormalMap() {
   texture.repeat.set(12, 20);
   return texture;
 }
+
+// 7. Laser-Etched Nameplate for MLPE Microinverter Enclosure
+export function createMicroinverterPlateTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Brushed aluminum / silver base plate
+  const grad = ctx.createLinearGradient(0, 0, 512, 256);
+  grad.addColorStop(0, '#e2e8f0');
+  grad.addColorStop(0.5, '#cbd5e1');
+  grad.addColorStop(1, '#94a3b8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Outer border & rivet holes
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(8, 8, 496, 240);
+
+  // Corner mounting rivets
+  ctx.fillStyle = '#64748b';
+  [[16, 16], [496, 16], [16, 240], [496, 240]].forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.stroke();
+  });
+
+  // Header Brand & Model
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 26px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillText('ENPHASE IQ8+ MLPE', 32, 48);
+
+  ctx.font = '14px sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.fillText('Grid-Interactive Microinverter with Rapid Shutdown', 32, 70);
+
+  // Divider line
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(32, 82);
+  ctx.lineTo(480, 82);
+  ctx.stroke();
+
+  // Electrical Specs Table
+  ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('DC INPUT (PV):', 32, 110);
+  ctx.font = '14px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText('Vdc: 25 - 58V | Imax: 12.0A | Pmax: 440W', 32, 130);
+
+  ctx.font = 'bold 15px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('AC OUTPUT (GRID):', 32, 160);
+  ctx.font = '14px "JetBrains Mono", monospace, sans-serif';
+  ctx.fillStyle = '#1e293b';
+  ctx.fillText('Vac: 240V (Split-Phase) | 60Hz | 300VA | 1.25A', 32, 180);
+
+  // Efficiency & Certifications
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillStyle = '#047857';
+  ctx.fillText('CEC EFFICIENCY: 97.5% • NEMA TYPE 4X / IP67', 32, 212);
+
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('UL 1741-SB / IEEE 1547-2018 • NEC 690.12 Compliant', 32, 232);
+
+  // QR / Matrix Code Graphic
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(400, 100, 72, 72);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(408, 108, 56, 56);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(414, 114, 20, 20);
+  ctx.fillRect(440, 114, 18, 18);
+  ctx.fillRect(414, 140, 18, 18);
+  ctx.fillRect(436, 136, 12, 12);
+  ctx.fillRect(444, 148, 10, 10);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}

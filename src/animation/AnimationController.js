@@ -65,6 +65,7 @@ export class AnimationController {
       case 'bottomEva': return 'Moisture-Resistant Cushioning Film';
       case 'backsheet': return 'Tedlar / PET Weatherproof Barrier';
       case 'jbox': return 'IP68 Weatherproof Box with MC4 Leads';
+      case 'inverter': return 'Enphase-Style 240V AC MLPE Inverter';
       default: return '';
     }
   }
@@ -262,6 +263,12 @@ export class AnimationController {
         targetPos = { x: 0, y: layerY - 0.02, z: -0.45 };
         camPos = { x: 0.32, y: layerY - 0.26, z: -0.22 };
         break;
+
+      case 'inverter':
+        // Close-up underneath of MLPE microinverter heatsink fins, status LED, and MC4/AC connections
+        targetPos = { x: 0, y: layerY, z: 0.16 };
+        camPos = { x: 0.36, y: layerY - 0.22, z: 0.38 };
+        break;
     }
 
     gsap.to(this.scene.controls.target, {
@@ -326,6 +333,11 @@ export class AnimationController {
         title: '7. Junction Box & MC4 Leads',
         mat: 'Flame-Retardant Polycarbonate (IP68)',
         detail: '3x Schottky bypass diodes • Heat-dissipating cooling fins • 4mm² UV-resistant double-insulated cables with MC4 plugs'
+      },
+      inverter: {
+        title: '8. Microinverter & AC Trunk (MLPE)',
+        mat: 'Die-Cast Aluminum Enclosure (NEMA 4X / IP67)',
+        detail: 'Integrated MPPT • 240V Split-Phase AC Output • 97.5% CEC Efficiency • Rapid Shutdown Compliant (NEC 690.12) • Heavy-duty AC trunk line'
       }
     };
 

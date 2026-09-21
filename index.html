@@ -63,6 +63,22 @@
           <span id="sun-imp-val">Imp: 11.5A</span>
           <span id="sun-iam-val">IAM: 100%</span>
         </div>
+
+        <!-- MLPE Microinverter Grid Conversion Stats -->
+        <div class="mlpe-conversion-row">
+          <div class="mlpe-stat-badge">
+            <span class="mlpe-stat-label">MLPE INVERTER</span>
+            <span id="mlpe-ac-watts" class="mlpe-stat-val">400W AC</span>
+          </div>
+          <div class="mlpe-stat-badge">
+            <span class="mlpe-stat-label">EFFICIENCY</span>
+            <span class="mlpe-stat-val" style="color: #10b981;">97.5% CEC</span>
+          </div>
+          <div class="mlpe-stat-badge">
+            <span class="mlpe-stat-label">GRID OUTPUT</span>
+            <span class="mlpe-stat-val">240V / 60Hz</span>
+          </div>
+        </div>
       </div>
 
       <!-- Layer Quick-Select Filter Pills -->
@@ -75,6 +91,7 @@
         <button class="layer-pill" data-layer="bottomEva">5. Bottom EVA</button>
         <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
         <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
+        <button class="layer-pill" data-layer="inverter">8. Microinverter</button>
       </div>
 
       <!-- Bottom Control Dock -->
@@ -140,6 +157,13 @@
               <path d="m19.07 4.93-1.41 1.41"></path>
             </svg>
             Solar Irradiance
+          </button>
+
+          <button id="btn-toggle-power" class="hud-toggle-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Power Flow
           </button>
 
           <button id="btn-toggle-theme" class="hud-toggle-btn active">

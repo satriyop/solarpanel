@@ -5,11 +5,12 @@ import {
   createBrushedAluminumTexture,
   createBacksheetTexture,
   createEVATexture,
-  createEVANormalMap
+  createEVANormalMap,
+  createMicroinverterPlateTexture
 } from '../textures/solarTextures.js';
 
 /**
- * SolarPanelModel - Procedurally creates the 7 photorealistic components of a residential solar panel.
+ * SolarPanelModel - Procedurally creates the 8 photorealistic components of a residential solar panel system.
  * Contains assembled and exploded vertical (Y-axis) coordinates for smooth transitions.
  */
 export class SolarPanelModel {
@@ -33,7 +34,8 @@ export class SolarPanelModel {
       { id: 'cells', name: '4. Silicon Solar Cells & Busbars', assembledY: 0.0, explodedY: 0.0 },
       { id: 'bottomEva', name: '5. Bottom EVA Encapsulant', assembledY: -0.006, explodedY: -0.30 },
       { id: 'backsheet', name: '6. Tedlar Backsheet', assembledY: -0.012, explodedY: -0.58 },
-      { id: 'jbox', name: '7. Junction Box & MC4 Cables', assembledY: -0.038, explodedY: -0.88 }
+      { id: 'jbox', name: '7. Junction Box & MC4 Cables', assembledY: -0.038, explodedY: -0.88 },
+      { id: 'inverter', name: '8. Microinverter & AC Trunk (MLPE)', assembledY: -0.09, explodedY: -1.18 }
     ];
 
     this.initTextures();
@@ -77,6 +79,10 @@ export class SolarPanelModel {
     // 7. Junction Box attached underneath
     const jboxGroup = this.createJunctionBox();
     this.registerLayer('jbox', jboxGroup);
+
+    // 8. Microinverter & AC Trunk (MLPE) attached beneath
+    const inverterGroup = this.createMicroinverter();
+    this.registerLayer('inverter', inverterGroup);
   }
 
   registerLayer(id, object3D) {
@@ -609,6 +615,236 @@ export class SolarPanelModel {
     createCable(0.045, false);  // Negative (-)
 
     return jboxGroup;
+  }
+
+  /**
+   * 8. Module-Level Power Electronics (MLPE) - Enphase-Style Microinverter & AC Trunk
+   * High-detail die-cast natural aluminum enclosure, heatsink cooling fins,
+   * laser-etched specification plate, pulsing status LED, DC MC4 input pigtails,
+   * and heavy-duty AC trunk cable.
+   */
+  createMicroinverter() {
+    const inverterGroup = new THREE.Group();
+
+    // The microinverter is positioned downstream of the junction box in Z space
+    // Junction box is at Z = -0.45; MC4 cable ends extend to Z = +0.06
+    const invX = 0;
+    const invY = 0;
+    const invZ = 0.16;
+
+    // Materials
+    const castAlumMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      metalness: 0.85,
+      roughness: 0.35
+    });
+
+    const darkAlumMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.75,
+      roughness: 0.42
+    });
+
+    const steelBoltMat = new THREE.MeshStandardMaterial({
+      color: 0xd1d5db,
+      metalness: 0.92,
+      roughness: 0.22
+    });
+
+    const rubberCableMat = new THREE.MeshStandardMaterial({
+      color: 0x15181c,
+      metalness: 0.08,
+      roughness: 0.58
+    });
+
+    // 1. Main Die-Cast Aluminum Enclosure Body
+    const bodyW = 0.25;
+    const bodyH = 0.038;
+    const bodyL = 0.17;
+    const bodyGeo = new THREE.BoxGeometry(bodyW, bodyH, bodyL);
+    const bodyMesh = new THREE.Mesh(bodyGeo, castAlumMat);
+    bodyMesh.position.set(invX, invY, invZ);
+    bodyMesh.castShadow = true;
+    bodyMesh.receiveShadow = true;
+    inverterGroup.add(bodyMesh);
+
+    // Top Perimeter Cast Bezel
+    const bezelGeo = new THREE.BoxGeometry(bodyW + 0.01, 0.006, bodyL + 0.01);
+    const bezelMesh = new THREE.Mesh(bezelGeo, darkAlumMat);
+    bezelMesh.position.set(invX, invY + bodyH / 2 - 0.003, invZ);
+    inverterGroup.add(bezelMesh);
+
+    // 2. Extruded Heatsink Cooling Fin Array (12 parallel fins on top)
+    const finCount = 12;
+    const finW = 0.0035;
+    const finH = 0.018;
+    const finL = bodyL - 0.016;
+    const finSpacing = (bodyW - 0.05) / (finCount - 1);
+    const startFinX = - (bodyW - 0.05) / 2;
+
+    const finGeo = new THREE.BoxGeometry(finW, finH, finL);
+    for (let i = 0; i < finCount; i++) {
+      const fx = startFinX + i * finSpacing;
+      if (Math.abs(fx) < 0.042) continue; // Spec plate cutout
+
+      const finMesh = new THREE.Mesh(finGeo, castAlumMat);
+      finMesh.position.set(fx, invY + bodyH / 2 + finH / 2, invZ);
+      finMesh.castShadow = true;
+      inverterGroup.add(finMesh);
+    }
+
+    // 3. Laser-Etched Nameplate Specification Plate
+    const plateGeo = new THREE.PlaneGeometry(0.11, 0.065);
+    const plateTex = createMicroinverterPlateTexture();
+    const plateMat = new THREE.MeshStandardMaterial({
+      map: plateTex,
+      roughness: 0.35,
+      metalness: 0.65
+    });
+    const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+    plateMesh.position.set(invX, invY + bodyH / 2 + 0.001, invZ);
+    plateMesh.rotation.x = -Math.PI / 2;
+    inverterGroup.add(plateMesh);
+
+    // 4. Mounting Flange Ears & Rail Attachment Hardware (left & right)
+    [-1, 1].forEach((dir) => {
+      const earW = 0.045;
+      const earH = 0.009;
+      const earL = 0.12;
+      const earGeo = new THREE.BoxGeometry(earW, earH, earL);
+      const earMesh = new THREE.Mesh(earGeo, castAlumMat);
+      earMesh.position.set(invX + dir * (bodyW / 2 + earW / 2), invY + bodyH / 2 - earH / 2, invZ);
+      inverterGroup.add(earMesh);
+
+      // Slotted bolt hole (inner cutout visual)
+      const slotGeo = new THREE.BoxGeometry(0.014, earH + 0.002, 0.04);
+      const slotMesh = new THREE.Mesh(slotGeo, darkAlumMat);
+      slotMesh.position.set(invX + dir * (bodyW / 2 + earW / 2), invY + bodyH / 2 - earH / 2, invZ);
+      inverterGroup.add(slotMesh);
+
+      // Stainless Steel M8 Racking Clamp Bolt & Washer
+      const boltHeadGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.012, 16);
+      const boltMesh = new THREE.Mesh(boltHeadGeo, steelBoltMat);
+      boltMesh.position.set(invX + dir * (bodyW / 2 + earW / 2), invY + bodyH / 2 + 0.006, invZ);
+      inverterGroup.add(boltMesh);
+
+      const washerGeo = new THREE.CylinderGeometry(0.013, 0.013, 0.003, 16);
+      const washerMesh = new THREE.Mesh(washerGeo, steelBoltMat);
+      washerMesh.position.set(invX + dir * (bodyW / 2 + earW / 2), invY + bodyH / 2 + 0.0015, invZ);
+      inverterGroup.add(washerMesh);
+    });
+
+    // 5. Ground Bonding Lug (Brass/Copper terminal boss)
+    const groundBossGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.014, 12);
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.88, roughness: 0.28 });
+    const groundBoss = new THREE.Mesh(groundBossGeo, brassMat);
+    groundBoss.position.set(invX - bodyW / 2 - 0.01, invY, invZ + 0.04);
+    groundBoss.rotation.z = Math.PI / 2;
+    inverterGroup.add(groundBoss);
+
+    // 6. Active Multi-Color Status LED (Pulsing Green for MPPT Grid-Tie)
+    const ledGeo = new THREE.SphereGeometry(0.0045, 16, 16);
+    this.inverterLedMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 2.5,
+      roughness: 0.1
+    });
+    this.inverterStatusLed = new THREE.Mesh(ledGeo, this.inverterLedMat);
+    this.inverterStatusLed.position.set(invX + 0.075, invY + bodyH / 2 + 0.003, invZ + 0.055);
+    inverterGroup.add(this.inverterStatusLed);
+
+    // Soft point light emitted by the LED
+    this.inverterLedLight = new THREE.PointLight(0x10b981, 0.5, 0.25);
+    this.inverterLedLight.position.copy(this.inverterStatusLed.position);
+    inverterGroup.add(this.inverterLedLight);
+
+    // 7. DC Input Pigtails & Mating MC4 Connectors (plugging into panel J-Box leads)
+    const createDCPigtail = (pX, isPos) => {
+      const startPt = new THREE.Vector3(pX, invY - 0.008, invZ - bodyL / 2);
+      const midPt = new THREE.Vector3(pX, invY - 0.014, invZ - bodyL / 2 - 0.025);
+      const endPt = new THREE.Vector3(pX, invY - 0.008, 0.06);
+
+      const curve = new THREE.CatmullRomCurve3([startPt, midPt, endPt]);
+      const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.005, 12, false);
+      const cable = new THREE.Mesh(tubeGeo, rubberCableMat);
+      cable.castShadow = true;
+      inverterGroup.add(cable);
+
+      // Polarity Identification Band
+      const bandGeo = new THREE.CylinderGeometry(0.0058, 0.0058, 0.014, 16);
+      const bandMat = new THREE.MeshStandardMaterial({
+        color: isPos ? 0xd92626 : 0x2563eb,
+        metalness: 0.2,
+        roughness: 0.3
+      });
+      const band = new THREE.Mesh(bandGeo, bandMat);
+      band.position.copy(curve.getPointAt(0.4));
+      band.rotation.x = Math.PI / 2;
+      inverterGroup.add(band);
+
+      // Matching Mating MC4 Socket
+      const mc4Geo = new THREE.CylinderGeometry(0.0088, 0.0088, 0.042, 16);
+      const mc4Mat = new THREE.MeshStandardMaterial({ color: 0x181a1f, metalness: 0.2, roughness: 0.4 });
+      const mc4Socket = new THREE.Mesh(mc4Geo, mc4Mat);
+      mc4Socket.position.copy(endPt);
+      mc4Socket.rotation.x = Math.PI / 2;
+      inverterGroup.add(mc4Socket);
+    };
+
+    createDCPigtail(-0.045, true);  // DC Input (+)
+    createDCPigtail(0.045, false);  // DC Input (-)
+
+    // 8. AC Output Drop Cable & Heavy-Duty Array Trunk Bus Line
+    const acDropGlandGeo = new THREE.CylinderGeometry(0.011, 0.011, 0.028, 16);
+    const acDropGland = new THREE.Mesh(acDropGlandGeo, darkAlumMat);
+    acDropGland.position.set(invX, invY - bodyH / 2 - 0.014, invZ);
+    inverterGroup.add(acDropGland);
+
+    const acDropCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(invX, invY - bodyH / 2 - 0.028, invZ),
+      new THREE.Vector3(invX + 0.04, invY - bodyH / 2 - 0.065, invZ + 0.04),
+      new THREE.Vector3(invX + 0.08, invY - bodyH / 2 - 0.085, invZ + 0.08)
+    ]);
+    const acDropTubeGeo = new THREE.TubeGeometry(acDropCurve, 20, 0.0065, 12, false);
+    const acDropCable = new THREE.Mesh(acDropTubeGeo, rubberCableMat);
+    acDropCable.castShadow = true;
+    inverterGroup.add(acDropCable);
+
+    const tJunctionGeo = new THREE.BoxGeometry(0.038, 0.032, 0.042);
+    const tJunctionMat = new THREE.MeshStandardMaterial({ color: 0x1f242b, roughness: 0.45, metalness: 0.2 });
+    const tJunction = new THREE.Mesh(tJunctionGeo, tJunctionMat);
+    tJunction.position.set(invX + 0.08, invY - bodyH / 2 - 0.085, invZ + 0.08);
+    inverterGroup.add(tJunction);
+
+    const trunkLen = 0.94;
+    const trunkGeo = new THREE.CylinderGeometry(0.0075, 0.0075, trunkLen, 16);
+    const trunkMesh = new THREE.Mesh(trunkGeo, rubberCableMat);
+    trunkMesh.position.set(invX, invY - bodyH / 2 - 0.085, invZ + 0.08);
+    trunkMesh.rotation.z = Math.PI / 2;
+    trunkMesh.castShadow = true;
+    inverterGroup.add(trunkMesh);
+
+    const termGeo = new THREE.CylinderGeometry(0.011, 0.011, 0.032, 16);
+    const termMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35, metalness: 0.3 });
+    const termMesh = new THREE.Mesh(termGeo, termMat);
+    termMesh.position.set(invX - trunkLen / 2, invY - bodyH / 2 - 0.085, invZ + 0.08);
+    termMesh.rotation.z = Math.PI / 2;
+    inverterGroup.add(termMesh);
+
+    return inverterGroup;
+  }
+
+  /**
+   * Set Status LED Pulse Intensity on Microinverter
+   */
+  setInverterLedPulse(intensity) {
+    if (this.inverterLedMat) {
+      this.inverterLedMat.emissiveIntensity = intensity;
+    }
+    if (this.inverterLedLight) {
+      this.inverterLedLight.intensity = intensity * 0.25;
+    }
   }
 
   /**
