@@ -35,11 +35,54 @@ window.addEventListener('DOMContentLoaded', () => {
   let isDarkTheme = false;
   let is4kEnabled = false;
 
-  // Update UI when progress changes from tween
+  let currentSunAngle = 0;
+
+  // Function to update physical PV generation based on ASHRAE IAM model
+  function updateSolarGeneration(angle) {
+    currentSunAngle = angle;
+    sunAngleLabel.textContent = `Angle: ${angle}°`;
+
+    // 1. Update 3D studio sun position, parallel beam array, and Fresnel reflection rays
+    const { cosVal, iam, fresnelReflection } = studio.setSunAngle(angle);
+
+    // 2. Physical PV Calculation (ASHRAE / PVsyst model)
+    // Direct Beam Irradiance with Fresnel Incidence Angle Modifier (IAM)
+    const gDirect = 1000 * Math.max(0, cosVal) * iam;
+    // Ambient Rayleigh scattered diffuse sky irradiance (flat panel on roof receives ~45W ambient)
+    const gDiffuse = 45;
+    const gTotal = Math.min(1000, gDirect + gDiffuse);
+    const relG = Math.max(0.045, gTotal / 1000);
+
+    // Shockley Diode equation: Voltage drops logarithmically with irradiance
+    const vmp = (35.6 * (1.0 + 0.038 * Math.log(relG))).toFixed(1);
+    // Short-circuit & operating current scales linearly with photon flux
+    const imp = (11.5 * relG).toFixed(1);
+    // Real electrical power in Watts
+    const watts = Math.min(410, Math.round(parseFloat(vmp) * parseFloat(imp)));
+    const pct = Math.round((watts / 410) * 100);
+
+    sunWattsVal.textContent = watts;
+    sunImpVal.textContent = `Imp: ${imp}A`;
+    if (sunVmpVal) sunVmpVal.textContent = `Vmp: ${vmp}V`;
+    if (sunIamVal) sunIamVal.textContent = `IAM: ${Math.round(iam * 100)}%`;
+    powerGaugeFill.style.width = `${pct}%`;
+
+    // 3. Update 3D silicon wafer photon absorption glow
+    solarPanel.setSunAbsorption(relG);
+  }
+
+  // Update UI & Sun Landing Height when separation progress changes
   anim.onProgressUpdate = (val) => {
     const pct = Math.round(val * 100);
     sliderExplode.value = pct;
     labelExplodeVal.textContent = `${pct}%`;
+
+    // Dynamically track the landing height of sunlight when layers explode
+    const glassLayer = solarPanel.layers.find(l => l.id === 'glass');
+    if (glassLayer) {
+      studio.updateSunTargetY(glassLayer.currentY);
+      studio.setSunAngle(currentSunAngle);
+    }
 
     if (pct < 10) {
       btnStartFrame.classList.add('active');
@@ -53,24 +96,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Start Frame: Fully Assembled
-  btnStartFrame.addEventListener('click', () => {
-    stopAutoCycle();
-    anim.animateTo(0.0, 2.0);
-  });
-
-  // End Frame: Exploded Diagram
-  btnEndFrame.addEventListener('click', () => {
-    stopAutoCycle();
-    anim.animateTo(1.0, 2.0);
-  });
-
   // Separation Slider
   sliderExplode.addEventListener('input', (e) => {
     stopAutoCycle();
     const val = parseFloat(e.target.value) / 100;
     anim.setProgress(val);
     labelExplodeVal.textContent = `${e.target.value}%`;
+
+    // Dynamically track sunlight landing height
+    const glassLayer = solarPanel.layers.find(l => l.id === 'glass');
+    if (glassLayer) {
+      studio.updateSunTargetY(glassLayer.currentY);
+      studio.setSunAngle(currentSunAngle);
+    }
+
     if (val < 0.1) {
       btnStartFrame.classList.add('active');
       btnEndFrame.classList.remove('active');
@@ -153,34 +192,36 @@ window.addEventListener('DOMContentLoaded', () => {
     studio.setSuperResolution(is4kEnabled);
   });
 
+  // Start Frame: Fully Assembled
+  btnStartFrame.addEventListener('click', () => {
+    stopAutoCycle();
+    anim.animateTo(0.0, 2.0);
+  });
+
+  // End Frame: Exploded Diagram
+  btnEndFrame.addEventListener('click', () => {
+    stopAutoCycle();
+    anim.animateTo(1.0, 2.0);
+  });
+
   // Sun Angle & Real-Time Power Generation Simulator
   const sliderSunAngle = document.getElementById('slider-sun-angle');
   const sunWattsVal = document.getElementById('sun-watts-val');
   const powerGaugeFill = document.getElementById('power-gauge-fill');
   const sunAngleLabel = document.getElementById('sun-angle-label');
   const sunImpVal = document.getElementById('sun-imp-val');
+  const sunVmpVal = document.getElementById('sun-vmp-val');
+  const sunIamVal = document.getElementById('sun-iam-val');
 
   if (sliderSunAngle) {
     sliderSunAngle.addEventListener('input', (e) => {
       const angle = parseFloat(e.target.value);
-      sunAngleLabel.textContent = `Angle: ${angle}°`;
-
-      // Update 3D studio sun position and get cosine incident factor
-      const cosVal = studio.setSunAngle(angle);
-
-      // Update 3D silicon cell photon absorption glow
-      solarPanel.setSunAbsorption(cosVal);
-
-      // Real-time PV power calculation: P = 410W * cos(angle)
-      const watts = Math.round(410 * Math.max(0, cosVal));
-      const imp = (11.5 * Math.max(0, cosVal)).toFixed(1);
-      const pct = Math.round((watts / 410) * 100);
-
-      sunWattsVal.textContent = watts;
-      sunImpVal.textContent = `Imp: ${imp}A`;
-      powerGaugeFill.style.width = `${pct}%`;
+      updateSolarGeneration(angle);
     });
   }
+
+  // Initialize at 0° High Noon
+  updateSolarGeneration(0);
 
   // Interactive 3D Hover Tooltip Card
   const hoverTooltip = document.getElementById('hover-tooltip');

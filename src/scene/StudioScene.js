@@ -236,17 +236,19 @@ export class StudioScene {
   }
 
   /**
-   * Initialize 3D Sun Visualizer:
+   * Initialize Physically-Accurate Sun Visualizer:
    * 1. Celestial Arc Trajectory in sky
    * 2. Glowing Sun Orb with corona halo
-   * 3. Volumetric Sunbeam pointing directly at the solar panel
-   * 4. Normal Vector & Incident Angle (θ) CAD Gizmo on panel center
+   * 3. Collimated Parallel Sunbeam Array (spanning full 1.0m x 1.7m rectangular module aperture)
+   * 4. Fresnel Reflected Specular Rays (physically illustrating grazing reflection losses)
+   * 5. Normal Vector & Incident Angle (θ) CAD Gizmo on panel
    */
   initSunVisualizer() {
     this.sunGroup = new THREE.Group();
     this.scene.add(this.sunGroup);
 
-    const R = 3.6; // Visual celestial radius
+    const R = 3.6; // Celestial dome visual radius
+    this.sunTargetY = 0.02; // Dynamically tracks top layer
 
     // 1. Celestial Arc Path (0° to 80°)
     const arcPoints = [];
@@ -299,39 +301,73 @@ export class StudioScene {
 
     this.sunGroup.add(this.sunOrb);
 
-    // 3. Volumetric Sunbeam Cone (Connecting Sun Orb to Solar Panel Surface)
-    this.sunBeamGroup = new THREE.Group();
+    // 3. Collimated Parallel Sunbeam Array (Covering the full 1.0m x 1.7m rectangular module)
+    this.incomingBeamsGroup = new THREE.Group();
+    this.incomingRays = [];
 
-    // Translucent light cone
-    const coneGeo = new THREE.CylinderGeometry(0.15, 0.75, 1, 24, 1, true);
-    coneGeo.translate(0, 0.5, 0); // Origin at top
-    coneGeo.rotateX(Math.PI / 2);
-    const coneMat = new THREE.MeshBasicMaterial({
+    // 3x3 grid of target points across the rectangular solar panel aperture
+    this.apertureOffsets = [
+      [-0.45, -0.75], [0.0, -0.75], [0.45, -0.75],
+      [-0.45,  0.00], [0.0,  0.00], [0.45,  0.00],
+      [-0.45,  0.75], [0.0,  0.75], [0.45,  0.75]
+    ];
+
+    const rayMat = new THREE.LineDashedMaterial({
+      color: 0xfef08a,
+      dashSize: 0.08,
+      gapSize: 0.04,
+      transparent: true,
+      opacity: 0.65
+    });
+
+    this.apertureOffsets.forEach(([ox, oz]) => {
+      const geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(ox, 3.6, oz),
+        new THREE.Vector3(ox, 0, oz)
+      ]);
+      const rayLine = new THREE.Line(geo, rayMat.clone());
+      this.incomingBeamsGroup.add(rayLine);
+      this.incomingRays.push({ line: rayLine, ox, oz });
+    });
+
+    // Rectangular soft translucent light volume bounding the incoming rays
+    const volGeo = new THREE.BoxGeometry(1.02, 1, 1.72);
+    volGeo.translate(0, 0.5, 0);
+    const volMat = new THREE.MeshBasicMaterial({
       color: 0xfef08a,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.08,
       side: THREE.DoubleSide,
       depthWrite: false
     });
-    this.beamCone = new THREE.Mesh(coneGeo, coneMat);
-    this.sunBeamGroup.add(this.beamCone);
+    this.lightVolume = new THREE.Mesh(volGeo, volMat);
+    this.incomingBeamsGroup.add(this.lightVolume);
 
-    // Central bright ray lines
-    const rayGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 1)
-    ]);
-    const rayMat = new THREE.LineBasicMaterial({
-      color: 0xffe082,
+    this.sunGroup.add(this.incomingBeamsGroup);
+
+    // 4. Fresnel Reflected Specular Rays (Simulating optical losses bouncing off glass into sky)
+    this.reflectedBeamsGroup = new THREE.Group();
+    this.reflectedRays = [];
+
+    const reflMat = new THREE.LineBasicMaterial({
+      color: 0xe0f2fe,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.0
     });
-    this.beamCenterRay = new THREE.Line(rayGeo, rayMat);
-    this.sunBeamGroup.add(this.beamCenterRay);
 
-    this.sunGroup.add(this.sunBeamGroup);
+    this.apertureOffsets.forEach(([ox, oz]) => {
+      const geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(ox, 0, oz),
+        new THREE.Vector3(ox, 1, oz)
+      ]);
+      const line = new THREE.Line(geo, reflMat.clone());
+      this.reflectedBeamsGroup.add(line);
+      this.reflectedRays.push({ line, ox, oz });
+    });
 
-    // 4. Incident Angle (θ) CAD Gizmo on Panel Surface
+    this.sunGroup.add(this.reflectedBeamsGroup);
+
+    // 5. Incident Angle (θ) CAD Gizmo on Panel Surface
     this.incidentGizmo = new THREE.Group();
     this.incidentGizmo.position.set(0, 0.03, 0);
 
@@ -356,17 +392,16 @@ export class StudioScene {
     this.incRayLine = new THREE.Line(this.incRayGeo, incRayMat);
     this.incidentGizmo.add(this.incRayLine);
 
-    // Center illuminated target disk on solar panel
-    const diskGeo = new THREE.RingGeometry(0.04, 0.12, 32);
-    diskGeo.rotateX(-Math.PI / 2);
-    this.spotDiskMat = new THREE.MeshBasicMaterial({
+    // Full rectangular aperture illuminated target boundary on solar panel
+    const targetGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.02, 1.72));
+    targetGeo.rotateX(-Math.PI / 2);
+    this.targetFrameMat = new THREE.LineBasicMaterial({
       color: 0xfef08a,
       transparent: true,
-      opacity: 0.5,
-      side: THREE.DoubleSide
+      opacity: 0.7
     });
-    this.spotDisk = new THREE.Mesh(diskGeo, this.spotDiskMat);
-    this.incidentGizmo.add(this.spotDisk);
+    this.targetFrame = new THREE.LineSegments(targetGeo, this.targetFrameMat);
+    this.incidentGizmo.add(this.targetFrame);
 
     this.sunGroup.add(this.incidentGizmo);
 
@@ -376,7 +411,7 @@ export class StudioScene {
 
   /**
    * Set Sun Zenith Angle (0° = Direct Overhead High Noon, 80° = Low Grazing Sunset)
-   * Visually animates the Sun Orb, Sunbeam Cone, and Incident Angle Gizmo in 3D!
+   * Visually animates parallel ray wavefronts, Fresnel specular reflections, and layer tracking!
    */
   setSunAngle(angleDeg) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -408,22 +443,77 @@ export class StudioScene {
       }
     }
 
-    // 3. Orient & Scale Volumetric Sunbeam from Sun Orb to Panel Center
-    if (this.sunBeamGroup && this.beamCone) {
-      const targetPos = new THREE.Vector3(0, 0.05, 0);
-      const sunPos = new THREE.Vector3(sunX, sunY, sunZ);
-      const dist = sunPos.distanceTo(targetPos);
+    // 3. Update Collimated Parallel Incoming Rays (Targeting full rectangular panel)
+    const landingY = this.sunTargetY;
+    const beamLength = 3.2;
+    const rayDirX = -sinVal;
+    const rayDirY = -cosVal;
+    const rayDirZ = -(0.35 * cosVal);
 
-      this.sunBeamGroup.position.copy(sunPos);
-      this.sunBeamGroup.lookAt(targetPos);
-      this.beamCone.scale.set(1.0, 1.0, dist);
-      this.beamCenterRay.scale.set(1.0, 1.0, dist);
+    if (this.incomingRays) {
+      this.incomingRays.forEach(({ line, ox, oz }) => {
+        const start = new THREE.Vector3(
+          ox - rayDirX * beamLength,
+          landingY - rayDirY * beamLength,
+          oz - rayDirZ * beamLength
+        );
+        const end = new THREE.Vector3(ox, landingY, oz);
 
-      // Beam opacity decreases at sunset
-      this.beamCone.material.opacity = Math.max(0.04, 0.18 * cosVal);
+        const posArr = line.geometry.attributes.position.array;
+        posArr[0] = start.x;
+        posArr[1] = start.y;
+        posArr[2] = start.z;
+        posArr[3] = end.x;
+        posArr[4] = end.y;
+        posArr[5] = end.z;
+        line.geometry.attributes.position.needsUpdate = true;
+        line.computeLineDistances();
+        line.material.opacity = Math.max(0.12, 0.65 * cosVal);
+      });
     }
 
-    // 4. Update Incident Ray Line on Gizmo
+    // Update light volume orientation
+    if (this.lightVolume) {
+      this.lightVolume.position.set(0, landingY, 0);
+      this.lightVolume.scale.set(1.0, beamLength * 0.8, 1.0);
+      this.lightVolume.material.opacity = Math.max(0.02, 0.08 * cosVal);
+    }
+
+    // 4. Update Fresnel Reflected Rays (Mirror reflection: θ_refl = θ_inc)
+    // Physical Fresnel reflection increases exponentially beyond 55°
+    const b0 = 0.05;
+    const iam = Math.max(0.05, 1.0 - b0 * (1.0 / Math.max(0.1, cosVal) - 1.0));
+    const fresnelReflection = Math.min(1.0, Math.max(0.02, 1.0 - iam + Math.pow(sinVal, 5) * 0.8));
+
+    if (this.reflectedRays) {
+      const reflLength = 2.4;
+      const reflDirX = -rayDirX; // Bounces off in opposite X
+      const reflDirY = -rayDirY; // Upward into sky
+      const reflDirZ = rayDirZ;
+
+      this.reflectedRays.forEach(({ line, ox, oz }) => {
+        const start = new THREE.Vector3(ox, landingY, oz);
+        const end = new THREE.Vector3(
+          ox + reflDirX * reflLength,
+          landingY + reflDirY * reflLength,
+          oz + reflDirZ * reflLength
+        );
+
+        const posArr = line.geometry.attributes.position.array;
+        posArr[0] = start.x;
+        posArr[1] = start.y;
+        posArr[2] = start.z;
+        posArr[3] = end.x;
+        posArr[4] = end.y;
+        posArr[5] = end.z;
+        line.geometry.attributes.position.needsUpdate = true;
+
+        // At grazing angles (>55°), reflection brightness surges!
+        line.material.opacity = angleDeg > 20 ? fresnelReflection * 0.75 : 0.0;
+      });
+    }
+
+    // 5. Update Incident Ray Line on Gizmo
     if (this.incRayLine && this.incRayGeo) {
       const posArr = this.incRayGeo.attributes.position.array;
       posArr[3] = 0.6 * sinVal;
@@ -432,12 +522,23 @@ export class StudioScene {
       this.incRayGeo.attributes.position.needsUpdate = true;
     }
 
-    // 5. Update Center Spot Absorption Disk on Panel
-    if (this.spotDiskMat) {
-      this.spotDiskMat.opacity = Math.max(0.08, 0.55 * cosVal);
+    // 6. Update Target Aperture Frame on Panel
+    if (this.targetFrameMat) {
+      this.targetFrameMat.opacity = Math.max(0.15, 0.7 * cosVal);
     }
 
-    return cosVal;
+    if (this.incidentGizmo) {
+      this.incidentGizmo.position.y = landingY + 0.01;
+    }
+
+    return { cosVal, iam, fresnelReflection };
+  }
+
+  /**
+   * Dynamically track the landing height of sunlight when layers explode
+   */
+  updateSunTargetY(y) {
+    this.sunTargetY = y;
   }
 
   render() {
