@@ -231,6 +231,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Toast notification helper for engineering alerts
+  const hudToast = document.getElementById('hud-toast');
+  let toastTimer = null;
+  function showToast(message, duration = 3500) {
+    if (!hudToast) return;
+    hudToast.innerHTML = message;
+    hudToast.classList.add('active');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      hudToast.classList.remove('active');
+    }, duration);
+  }
+
   // Function to switch between Inverter Architectures (Microinverter vs Central String Inverter)
   function setInverterArchitecture(mode) {
     currentInverterMode = mode;
@@ -264,9 +277,35 @@ window.addEventListener('DOMContentLoaded', () => {
       centralInverter.updateTelemetry(currentWatts);
     }
 
-    // 7. Update DC interconnect conduit: only visible when both Central Inverter and Battery are active
-    if (batteryStorage) {
-      batteryStorage.setInterconnectVisible(isCentral && isBatteryActive);
+    // 7. Manage DC-Coupled Battery Storage availability
+    if (isCentral) {
+      // In Central Hybrid Inverter mode, DC Battery Storage is enabled
+      if (btnToggleBattery) {
+        btnToggleBattery.disabled = false;
+        btnToggleBattery.classList.remove('btn-disabled');
+        btnToggleBattery.title = 'Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)';
+      }
+      if (batteryStorage) {
+        batteryStorage.setInterconnectVisible(isBatteryActive);
+      }
+    } else {
+      // In MLPE Microinverter mode, DC Battery Storage cannot operate (requires Central Hybrid Inverter)
+      if (isBatteryActive) {
+        isBatteryActive = false;
+        if (btnToggleBattery) btnToggleBattery.classList.remove('active');
+        if (batteryStorage) {
+          batteryStorage.setVisible(false);
+          batteryStorage.setInterconnectVisible(false);
+        }
+        if (pillBattery) {
+          pillBattery.style.display = 'none';
+        }
+      }
+      if (btnToggleBattery) {
+        btnToggleBattery.disabled = true;
+        btnToggleBattery.classList.add('btn-disabled');
+        btnToggleBattery.title = 'DC Battery requires Central Hybrid Inverter (DC-Coupled)';
+      }
     }
   }
 
@@ -281,14 +320,14 @@ window.addEventListener('DOMContentLoaded', () => {
   // Home Battery Storage Toggle (10.5kWh LiFePO4 BESS)
   if (btnToggleBattery) {
     btnToggleBattery.addEventListener('click', () => {
-      isBatteryActive = !isBatteryActive;
-      btnToggleBattery.classList.toggle('active', isBatteryActive);
-
-      // If user turns ON DC Battery Storage while in Microinverter mode, auto-switch to Central Hybrid Inverter
-      if (isBatteryActive && currentInverterMode === 'micro') {
-        setInverterArchitecture('central');
+      // If user clicks in Microinverter mode, show educational toast notification
+      if (currentInverterMode === 'micro') {
+        showToast('💡 <strong>DC Battery Disabled:</strong> 400V DC battery requires Central Hybrid Inverter architecture (DC-Coupled). Switch inverter to Central (5kW) to enable.');
+        return;
       }
 
+      isBatteryActive = !isBatteryActive;
+      btnToggleBattery.classList.toggle('active', isBatteryActive);
       batteryStorage.setVisible(isBatteryActive);
       batteryStorage.setInterconnectVisible(isBatteryActive && (currentInverterMode === 'central'));
 

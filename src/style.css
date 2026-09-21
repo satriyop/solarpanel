@@ -699,3 +699,59 @@ body {
 .studio-dark .mlpe-stat-val {
   color: #38bdf8;
 }
+
+/* Disabled State for Dock Buttons */
+.hud-toggle-btn:disabled,
+.hud-toggle-btn.btn-disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+  pointer-events: auto;
+}
+
+.hud-toggle-btn:disabled:hover,
+.hud-toggle-btn.btn-disabled:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+  transform: none;
+}
+
+.studio-dark .hud-toggle-btn:disabled,
+.studio-dark .hud-toggle-btn.btn-disabled {
+  opacity: 0.35;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Floating Engineering Toast Notification */
+.hud-toast {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-toast.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
