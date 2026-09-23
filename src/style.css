@@ -241,7 +241,7 @@ body {
   left: max(24px, env(safe-area-inset-left));
   right: max(24px, env(safe-area-inset-right));
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-end;
   gap: 16px;
   pointer-events: none;
@@ -261,19 +261,12 @@ body {
   pointer-events: auto;
 }
 
-.control-card-anim {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 6px 8px;
-}
-
 .control-card-tools {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: nowrap;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .hud-btn-cluster {
@@ -1174,8 +1167,8 @@ body {
 @media (max-width: 1450px) {
   .control-card-tools {
     flex-wrap: wrap;
-    justify-content: flex-end;
-    max-width: 680px;
+    justify-content: center;
+    max-width: 900px;
     gap: 6px;
   }
 
@@ -1268,14 +1261,9 @@ body {
     bottom: max(16px, env(safe-area-inset-bottom));
     left: max(16px, env(safe-area-inset-left));
     right: max(16px, env(safe-area-inset-right));
-    flex-direction: column;
-    align-items: stretch;
+    display: flex;
+    justify-content: center;
     gap: 8px;
-  }
-
-  .control-card-anim {
-    justify-content: flex-start;
-    width: auto;
   }
 
   .control-card-tools {
@@ -1368,12 +1356,13 @@ body {
 
 
 
-  /* Mobile Bottom Control Dock: Thumb-Friendly Inverted Stack */
+  /* Mobile Bottom Control Dock: Unified Floating Dock */
   .hud-footer {
     bottom: max(10px, env(safe-area-inset-bottom));
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
-    flex-direction: column-reverse; /* Explode slider closest to thumb */
+    display: flex;
+    justify-content: center;
     gap: 6px;
   }
 
@@ -1381,22 +1370,6 @@ body {
     padding: 6px 10px;
     border-radius: 12px;
     width: 100%;
-  }
-
-  /* Primary animation breakdown toggle row */
-  .control-card-anim {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 6px 8px;
-  }
-
-  .control-card-anim #btn-toggle-breakdown {
-    width: 100%;
-    justify-content: center;
-    min-height: 38px;
-    font-size: 12px;
-    font-weight: 700;
   }
 
   /* Secondary tools bar: Horizontally swipeable */
@@ -1432,7 +1405,7 @@ body {
   /* Solar Irradiance Widget: Floating Bottom Sheet on Mobile */
   .sun-simulator-card {
     top: auto;
-    bottom: calc(115px + env(safe-area-inset-bottom));
+    bottom: calc(72px + env(safe-area-inset-bottom));
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
     width: auto;
@@ -1544,11 +1517,6 @@ body {
     font-size: 9px;
   }
 
-  .control-card-anim #btn-toggle-breakdown {
-    padding: 5px 8px;
-    font-size: 11px;
-    min-height: 34px;
-  }
 }
 
 /* Mobile Landscape Orientation (height <= 500px) */
@@ -1585,8 +1553,8 @@ body {
     bottom: max(6px, env(safe-area-inset-bottom));
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
-    flex-direction: row;
-    justify-content: space-between;
+    display: flex;
+    justify-content: center;
     align-items: center;
     gap: 8px;
   }
@@ -1598,19 +1566,8 @@ body {
     width: auto;
   }
 
-  .control-card-anim {
-    flex-shrink: 0;
-    padding: 4px 6px;
-  }
-
-  .control-card-anim #btn-toggle-breakdown {
-    padding: 4px 8px;
-    font-size: 10px;
-    min-height: 28px;
-  }
-
   .control-card-tools {
-    max-width: 50vw;
+    max-width: 90vw;
     padding: 4px 6px;
   }
 

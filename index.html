@@ -181,19 +181,7 @@
 
       <!-- Bottom Control Dock -->
       <div class="hud-layer hud-footer">
-        <!-- Animation & State Controls -->
-        <div class="control-card control-card-anim">
-          <button id="btn-toggle-breakdown" class="hud-toggle-btn" title="Toggle antara Panel Terpasang Utuh dan Tampilan Terurai (Exploded Breakdown)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-              <path d="M2 17l10 5 10-5"></path>
-              <path d="M2 12l10 5 10-5"></path>
-            </svg>
-            <span>Layer Breakdown</span>
-          </button>
-        </div>
-
-        <!-- Camera, Studio, Topology & Simulation Controls -->
+        <!-- Unified Camera, Studio, Topology & Simulation Controls -->
         <div class="control-card control-card-tools">
           <!-- Cluster 1: System Hardware & Topology -->
           <div class="hud-btn-cluster hud-cluster-topology" title="System Topology & Equipment">
@@ -230,6 +218,15 @@
 
           <!-- Cluster 2: Viewport & Inspection -->
           <div class="hud-btn-cluster hud-cluster-viewport" title="Viewport & Inspection Controls">
+            <button id="btn-toggle-breakdown" class="hud-toggle-btn" title="Toggle antara Panel Terpasang Utuh dan Tampilan Terurai (Exploded Breakdown)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+              </svg>
+              <span>Layer Breakdown</span>
+            </button>
+
             <button id="btn-orbit-pan" class="hud-toggle-btn active" title="360° Continuous Orbit Camera Pan">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
