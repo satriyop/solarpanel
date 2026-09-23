@@ -70,6 +70,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const labelInvStat = document.getElementById('label-inv-stat');
   const labelGridStat = document.getElementById('label-grid-stat');
   const valGridStat = document.getElementById('val-grid-stat');
+  const barSolarShare = document.getElementById('bar-solar-share');
+  const barPlnShare = document.getElementById('bar-pln-share');
+  const valSolarSplit = document.getElementById('val-solar-split');
+  const valPlnSplit = document.getElementById('val-pln-split');
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
@@ -114,8 +118,47 @@ window.addEventListener('DOMContentLoaded', () => {
     if (sunVmpVal) sunVmpVal.textContent = `Vmp: ${vmp}V`;
     if (sunEffVal) sunEffVal.textContent = `Eff: 21.3%`;
     if (sunIamVal) sunIamVal.textContent = `IAM: ${Math.round(iam * 100)}%`;
-    if (mlpeAcWatts) mlpeAcWatts.textContent = `${Math.round(watts * 0.975)}W AC`;
+    const acSolarWatts = Math.min(415, Math.round(watts * 0.975));
+    if (mlpeAcWatts) mlpeAcWatts.textContent = `${acSolarWatts}W AC`;
     powerGaugeFill.style.width = `${pct}%`;
+
+    // Dual-Source Energy Balance calculation for Household Load (900W total)
+    // Sesuai Permen ESDM No. 2/2024: 100% konsumsi mandiri tanpa ekspor ke grid (Zero-Export PCC)
+    const totalHomeLoad = 900;
+    const isOffGrid = (currentGridMode === 'offgrid');
+
+    let solarShareWatts = 0;
+    let plnShareWatts = 0;
+    let solarSharePct = 0;
+    let plnSharePct = 0;
+
+    if (isOffGrid) {
+      solarShareWatts = Math.min(totalHomeLoad, acSolarWatts);
+      const bessDischarge = Math.max(0, totalHomeLoad - solarShareWatts);
+      solarSharePct = Math.round((solarShareWatts / totalHomeLoad) * 100);
+      const bessPct = 100 - solarSharePct;
+
+      if (barSolarShare) barSolarShare.style.width = `${solarSharePct}%`;
+      if (barPlnShare) {
+        barPlnShare.style.width = `${bessPct}%`;
+        barPlnShare.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+      }
+      if (valSolarSplit) valSolarSplit.textContent = `${solarShareWatts}W (${solarSharePct}%)`;
+      if (valPlnSplit) valPlnSplit.textContent = `BESS: ${bessDischarge}W (${bessPct}%)`;
+    } else {
+      solarShareWatts = Math.min(totalHomeLoad, acSolarWatts);
+      plnShareWatts = Math.max(0, totalHomeLoad - solarShareWatts);
+      solarSharePct = Math.round((solarShareWatts / totalHomeLoad) * 100);
+      plnSharePct = 100 - solarSharePct;
+
+      if (barSolarShare) barSolarShare.style.width = `${solarSharePct}%`;
+      if (barPlnShare) {
+        barPlnShare.style.width = `${plnSharePct}%`;
+        barPlnShare.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+      }
+      if (valSolarSplit) valSolarSplit.textContent = `${solarShareWatts}W (${solarSharePct}%)`;
+      if (valPlnSplit) valPlnSplit.textContent = `${plnShareWatts}W (${plnSharePct}%)`;
+    }
 
     // 3. Update 3D silicon wafer photon absorption glow
     solarPanel.setSunAbsorption(relG);
@@ -364,6 +407,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
       showToast('🌐 <strong>Mode ON-GRID PLN Aktif:</strong> Sinkronisasi frekuensi 50Hz (Grid-Following PLL) dengan PLN 220V. Sesuai <em>Permen ESDM No. 2/2024</em>, Zero-Export DDSU666 & CT membatasi ekspor ke PLN selalu 0.00 kW (100% konsumsi mandiri).', 5500);
     }
+
+    // 5. Update energy balance gauges immediately
+    updateSolarGeneration(currentSunAngle);
   }
 
   // Function to switch between Inverter Architectures (Microinverter vs Central String Inverter)
@@ -388,11 +434,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // 4. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
     centralInverter.setVisible(isCentral);
 
-    // 5. Update PLN Distribution Board visibility when using wall equipment
-    isPlnActive = isCentral;
-    plnDistribution.setVisible(isCentral);
-    if (btnTogglePln) btnTogglePln.classList.toggle('active', isCentral);
-    if (pillPln) pillPln.style.display = isCentral ? 'inline-block' : 'none';
+    // 5. Update PLN Distribution Board visibility (Always active in On-Grid mode for utility connection & load)
+    if (currentGridMode === 'ongrid' || isCentral) {
+      isPlnActive = true;
+      plnDistribution.setVisible(true);
+      if (btnTogglePln) btnTogglePln.classList.add('active');
+      if (pillPln) pillPln.style.display = 'inline-block';
+    } else {
+      isPlnActive = false;
+      plnDistribution.setVisible(false);
+      if (btnTogglePln) btnTogglePln.classList.remove('active');
+      if (pillPln) pillPln.style.display = 'none';
+    }
 
     // 6. Update HUD switcher button
     if (btnToggleInverterMode) {

@@ -589,7 +589,7 @@ body {
   padding: 14px 18px;
   border-radius: 16px;
   box-shadow: var(--shadow-hud);
-  width: 255px;
+  width: 275px;
   z-index: 12;
   opacity: 0;
   pointer-events: none;
@@ -834,6 +834,156 @@ body {
 
 .studio-dark .mlpe-stat-val {
   color: #38bdf8;
+}
+
+/* Dual-Source Kirchhoff Energy Balance Section */
+.kirchhoff-balance-card {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.studio-dark .kirchhoff-balance-card {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.kirchhoff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.kirchhoff-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.studio-dark .kirchhoff-title {
+  color: #f1f5f9;
+}
+
+.kirchhoff-badge {
+  font-size: 8px;
+  font-weight: 700;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.studio-dark .kirchhoff-badge {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.kirchhoff-bar-container {
+  display: flex;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+
+.studio-dark .kirchhoff-bar-container {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.kirchhoff-bar-solar {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  transition: width 0.2s ease-out;
+}
+
+.kirchhoff-bar-pln {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.2s ease-out, background 0.2s ease;
+}
+
+.kirchhoff-split-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  margin-bottom: 7px;
+}
+
+.split-col {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.split-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.solar-dot {
+  background: #0284c7;
+  box-shadow: 0 0 4px #0284c7;
+}
+
+.pln-dot {
+  background: #10b981;
+  box-shadow: 0 0 4px #10b981;
+}
+
+.split-name {
+  color: #64748b;
+  font-size: 9.5px;
+}
+
+.studio-dark .split-name {
+  color: #94a3b8;
+}
+
+.solar-col strong {
+  color: #0284c7;
+}
+
+.studio-dark .solar-col strong {
+  color: #38bdf8;
+}
+
+.pln-col strong {
+  color: #10b981;
+}
+
+.kirchhoff-loads-row {
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+.load-pill {
+  flex: 1;
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px 2px;
+  border-radius: 5px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.studio-dark .load-pill {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
 }
 
 /* Disabled State for Dock Buttons */

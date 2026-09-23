@@ -127,6 +127,43 @@
             <span id="val-grid-stat" class="mlpe-stat-val">220V / 50Hz</span>
           </div>
         </div>
+
+        <!-- Dual-Source Kirchhoff Energy Balance (Permen ESDM 2/2024 Self-Consumption) -->
+        <div class="kirchhoff-balance-card">
+          <div class="kirchhoff-header">
+            <div class="kirchhoff-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+              </svg>
+              <span>DUAL-SOURCE LOAD MIX (900W)</span>
+            </div>
+            <span class="kirchhoff-badge" title="Permen ESDM No. 2/2024 Zero-Export Rule">ZERO-EXPORT PCC</span>
+          </div>
+
+          <div class="kirchhoff-bar-container">
+            <div id="bar-solar-share" class="kirchhoff-bar-solar" style="width: 45%;"></div>
+            <div id="bar-pln-share" class="kirchhoff-bar-pln" style="width: 55%;"></div>
+          </div>
+
+          <div class="kirchhoff-split-labels">
+            <div class="split-col solar-col">
+              <span class="split-dot solar-dot"></span>
+              <span class="split-name">Solar:</span>
+              <strong id="val-solar-split">405W (45%)</strong>
+            </div>
+            <div class="split-col pln-col">
+              <span class="split-dot pln-dot"></span>
+              <span class="split-name">PLN:</span>
+              <strong id="val-pln-split">495W (55%)</strong>
+            </div>
+          </div>
+
+          <div class="kirchhoff-loads-row">
+            <span class="load-pill" title="Sirkuit Cabang 1: AC Inverter (MCB C10)">❄️ AC: 600W</span>
+            <span class="load-pill" title="Sirkuit Cabang 2: Kulkas Inverter (MCB C6)">🧊 Kulkas: 150W</span>
+            <span class="load-pill" title="Sirkuit Cabang 3: Lampu & Wi-Fi (MCB C4)">💡 Lampu: 150W</span>
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Control Dock -->

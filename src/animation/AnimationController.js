@@ -155,6 +155,28 @@ export class AnimationController {
       isExternal: true,
       isVisibleCheck: () => this.centralInverter && this.centralInverter.isVisible && this.inverterMode === 'central'
     });
+
+    // 2.8 PLN Aerial Service Drop Cable (From Utility Pole)
+    this.createAnnotationLabel({
+      id: 'plnAerialDrop',
+      step: 'PLN 220V',
+      title: 'Kabel Sambungan Masuk PLN (NFA2X-T 2×10mm²)',
+      desc: 'Saluran Udara JTR Tiang PLN 220V 50Hz • Memasok Defisit Daya Beban',
+      offset: new THREE.Vector3(-0.42, 0.88, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible && !this.isPlnFocused
+    });
+
+    // 2.9 Consumer Main Distribution Unit (Household Load: 900W)
+    this.createAnnotationLabel({
+      id: 'consumerLoadUnit',
+      step: 'LOAD',
+      title: 'Kotak MCB Distribusi Beban Rumah (900W)',
+      desc: 'Point of Common Coupling (PCC) • AC (600W), Kulkas (150W), Lampu (150W)',
+      offset: new THREE.Vector3(0.16, -0.47, 0.08),
+      isExternal: true,
+      isVisibleCheck: () => this.plnDistribution && this.plnDistribution.isVisible
+    });
   }
 
   getLayerSubtitle(id) {
@@ -413,6 +435,28 @@ export class AnimationController {
       if (descEl) descEl.textContent = isOffGrid
         ? 'Wajib Aktif • Sumber Pembentuk Frekuensi 50Hz & Penstabil Tegangan Bus DC'
         : '14 Sel Prismatik • 51.2V DC / 206Ah • Buffer Konsumsi Mandiri & Peak Shaving';
+    }
+
+    // 8. Consumer Load Unit Label (Household Load: 900W)
+    const loadItem = this.labelElements.find(i => i.id === 'consumerLoadUnit');
+    if (loadItem) {
+      const titleEl = loadItem.domElement.querySelector('.annotation-title');
+      const descEl = loadItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'Kotak MCB Beban Esensial (900W EPS)' : 'Kotak MCB Distribusi Beban Rumah (900W)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Pasokan Terisolasi dari Inverter & BESS • AC 600W, Kulkas 150W, Lampu 150W'
+        : 'Point of Common Coupling (PCC) • Pasokan Simultan PLTS & PLN 220V';
+    }
+
+    // 9. PLN Aerial Feeder Drop Cable
+    const aerialItem = this.labelElements.find(i => i.id === 'plnAerialDrop');
+    if (aerialItem) {
+      const titleEl = aerialItem.domElement.querySelector('.annotation-title');
+      const descEl = aerialItem.domElement.querySelector('.annotation-desc');
+      if (titleEl) titleEl.textContent = isOffGrid ? 'Saluran Masuk PLN (Padam / Feeder 0V)' : 'Kabel Sambungan Masuk PLN (NFA2X-T)';
+      if (descEl) descEl.textContent = isOffGrid
+        ? 'Jaringan Tegangan Rendah Terputus • Feeder PLN Blackout 0V'
+        : 'Saluran Udara JTR Tiang PLN 220V 50Hz • Memasok Defisit Daya Beban';
     }
   }
 
@@ -674,6 +718,16 @@ export class AnimationController {
         title: 'Panel Proteksi AC & Distribusi Esensial (PUIL 2011)',
         mat: 'Enclosure IP65 • SPD Type 2 (40kA) + RCD 30mA + MCB Sirkuit',
         detail: 'Surge Protective Device (SPD 275V Uc) perlindungan sambaran petir induksi jaringan PLN, RCD 30mA proteksi sengatan arus bocor tanah manusia, serta pembagi beban esensial (kulkas, lampu, pompa, WiFi).'
+      },
+      plnAerialDrop: {
+        title: 'Kabel Sambungan Masuk PLN (NFA2X-T)',
+        mat: 'Kabel Twisted Saluran Udara 2×10mm² (220V 50Hz)',
+        detail: 'Saluran masuk pelayanan (Service Drop) dari tiang JTR (Jaringan Tegangan Rendah) PLN membawa daya utility 220V 50Hz untuk memasok defisit daya konsumsi rumah tangga.'
+      },
+      consumerLoadUnit: {
+        title: 'Kotak MCB Distribusi Beban Rumah (900W)',
+        mat: 'Titik Temu Beban (PCC — Point of Common Coupling)',
+        detail: 'Busbar pencampuran Kirchhoff: Beban rumah 900W (AC 600W, Kulkas 150W, Lampu 150W) disuplai simultan oleh Solar Panel & PLN secara proporsional dengan prioritas konsumsi mandiri PLTS.'
       }
     };
 
@@ -714,6 +768,12 @@ export class AnimationController {
 
     const acItem = this.labelElements.find(i => i.id === 'acCombiner');
     if (acItem) acItem.object = plnDistribution.group;
+
+    const aerialItem = this.labelElements.find(i => i.id === 'plnAerialDrop');
+    if (aerialItem) aerialItem.object = plnDistribution.group;
+
+    const loadItem = this.labelElements.find(i => i.id === 'consumerLoadUnit');
+    if (loadItem) loadItem.object = plnDistribution.group;
 
     this.updateContextualLabels();
   }
@@ -849,7 +909,13 @@ export class AnimationController {
     if (this.plnDistribution && this.plnDistribution.isVisible) {
       this.plnDistribution.group.traverse(child => {
         if (child.isMesh && child.material.visible !== false) {
-          if (child.userData.isPlnSmartMeter) {
+          if (child.userData.isPlnAerialDrop) {
+            child.userData.parentLayerId = 'plnAerialDrop';
+            meshes.push(child);
+          } else if (child.userData.isConsumerLoadUnit || child.userData.isConsumerUnit) {
+            child.userData.parentLayerId = 'consumerLoadUnit';
+            meshes.push(child);
+          } else if (child.userData.isPlnSmartMeter) {
             child.userData.parentLayerId = 'plnSmartMeter';
             meshes.push(child);
           } else if (child.userData.isZeroExportSensor) {

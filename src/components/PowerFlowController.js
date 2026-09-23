@@ -244,7 +244,7 @@ export class PowerFlowController {
       });
     }
 
-    // 4. Essential Loads Circuit Feeder (Combiner down to household circuits)
+    // 4. Combined AC Feeder into Consumer Main Distribution Panel
     this.essentialLoadsParticles = [];
     for (let i = 0; i < 8; i++) {
       const sprite = new THREE.Sprite(this.acMat.clone());
@@ -256,6 +256,27 @@ export class PowerFlowController {
         sprite,
         t: i / 8,
         speed: 0.36
+      });
+    }
+
+    // 5. Household Consumer Branch Circuits (Air Conditioner, Refrigerator, Lighting & Wi-Fi)
+    this.consumerBranchParticles = [];
+    if (plnDistribution.loadBranchCurves && plnDistribution.loadBranchCurves.length > 0) {
+      plnDistribution.loadBranchCurves.forEach((curve, bIdx) => {
+        for (let i = 0; i < 4; i++) {
+          const sprite = new THREE.Sprite(this.acMat.clone());
+          sprite.material.color.setHex(0x38bdf8); // Combined AC Power
+          sprite.scale.set(0.038, 0.038, 1);
+          sprite.visible = (this.isVisible && plnDistribution.isVisible);
+          plnDistribution.group.add(sprite);
+          this.consumerBranchParticles.push({
+            sprite,
+            curve,
+            bIdx,
+            t: i / 4,
+            speed: 0.32
+          });
+        }
       });
     }
   }
@@ -483,21 +504,36 @@ export class PowerFlowController {
         this.batteryChargeParticles.forEach(p => p.sprite.visible = false);
       }
 
-      // F. Animate PLN Grid Distribution Board Particles
+      // F. Animate PLN Grid Distribution Board & Household Consumer Load Unit
       if (this.plnDistribution && this.plnDistribution.isVisible) {
         const isOffGrid = (this.gridTopology === 'offgrid');
+        const homeWatts = 900; // Base household consumption (Air Conditioner + Kulkas + Lampu/Wi-Fi)
+        const solarEffectiveWatts = Math.min(currentWatts, homeWatts);
+        const plnEffectiveWatts = isOffGrid ? 0 : Math.max(0, homeWatts - solarEffectiveWatts);
 
-        // 1. PLN Utility Feeder Line Particles (Incoming from grid to meter)
+        // Normalized power contribution ratios (Kirchhoff: P_load = P_solar + P_pln)
+        const plnRatio = isOffGrid ? 0.0 : (plnEffectiveWatts / homeWatts);
+        const solarRatio = isOffGrid ? 1.0 : (solarEffectiveWatts / homeWatts);
+
+        // 1. PLN Utility Feeder Line Particles (Aerial Drop -> Meter -> DDSU666)
         if (this.plnGridParticles) {
+          const pt = new THREE.Vector3();
           this.plnGridParticles.forEach((p) => {
-            if (isOffGrid) {
+            if (isOffGrid || plnRatio <= 0.01) {
               p.sprite.visible = false;
             } else {
               p.sprite.visible = this.isVisible;
-              p.t = (p.t + p.speed * delta) % 1.0;
-              const py = 0.74 - p.t * 0.46;
-              p.sprite.position.set(-0.16, py, 0.01);
-              p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * powerFactor;
+              p.t = (p.t + p.speed * (0.35 + 0.65 * plnRatio) * delta) % 1.0;
+              if (this.plnDistribution.plnAerialCurve && p.t < 0.45) {
+                // First half: aerial drop cable into weatherhead
+                this.plnDistribution.plnAerialCurve.getPoint(p.t / 0.45, pt);
+                p.sprite.position.copy(pt);
+              } else {
+                // Second half: through meter down into DDSU666
+                const subT = (p.t - 0.45) / 0.55;
+                p.sprite.position.set(-0.16, 0.74 - subT * 0.68, 0.01);
+              }
+              p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * (0.35 + 0.65 * plnRatio);
             }
           });
         }
@@ -536,18 +572,35 @@ export class PowerFlowController {
           });
         }
 
-        // 4. Essential Loads Circuit Distribution (Combiner down to house circuits)
+        // 4. Combined AC Feeder (Entering Consumer Main Distribution Panel)
         if (this.essentialLoadsParticles) {
           this.essentialLoadsParticles.forEach((p) => {
-            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
-            p.sprite.position.set(0.16, -0.28 - p.t * 0.30, 0.01);
+            p.t = (p.t + p.speed * (0.3 + 0.7 * powerFactor) * delta) % 1.0;
+            p.sprite.position.set(0.16, -0.28 - p.t * 0.11, 0.01);
             p.sprite.visible = this.isVisible;
             if (isOffGrid) {
               p.sprite.material.color.setHex(0xf59e0b); // EPS backup
             } else {
-              p.sprite.material.color.setHex(0x38bdf8); // Clean self-consumption
+              p.sprite.material.color.setHex(solarRatio > 0.6 ? 0x06b6d4 : 0x10b981);
             }
-            p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * powerFactor;
+            p.sprite.material.opacity = 0.75 + 0.25 * Math.sin(p.t * Math.PI);
+          });
+        }
+
+        // 5. Consumer Branch Circuit Particles (AC 600W, Kulkas 150W, Lampu 150W)
+        if (this.consumerBranchParticles) {
+          const pt = new THREE.Vector3();
+          this.consumerBranchParticles.forEach((p) => {
+            p.t = (p.t + p.speed * (0.3 + 0.7 * (solarRatio * 0.5 + plnRatio * 0.5)) * delta) % 1.0;
+            p.curve.getPoint(p.t, pt);
+            p.sprite.position.copy(pt);
+            p.sprite.visible = this.isVisible;
+            if (isOffGrid) {
+              p.sprite.material.color.setHex(0xf59e0b); // Battery/EPS Backup
+            } else {
+              p.sprite.material.color.setHex(0x38bdf8); // Combined AC Power (Kirchhoff Sum)
+            }
+            p.sprite.material.opacity = 0.65 + 0.35 * Math.sin(p.t * Math.PI);
           });
         }
       }

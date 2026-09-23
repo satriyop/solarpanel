@@ -900,6 +900,26 @@ export class SolarPanelModel {
     termMesh.rotation.z = Math.PI / 2;
     inverterGroup.add(termMesh);
 
+    // 9. AC Field Wireable Connector (Q-CONN-R-10M) & Transition Conduit to Equipment Board
+    const qConnGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.055, 16);
+    const qConnMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.3, roughness: 0.4 });
+    const qConnMesh = new THREE.Mesh(qConnGeo, qConnMat);
+    qConnMesh.position.set(invX + trunkLen / 2, invY - bodyH / 2 - 0.085, invZ + 0.08);
+    qConnMesh.rotation.z = Math.PI / 2;
+    qConnMesh.castShadow = true;
+    inverterGroup.add(qConnMesh);
+
+    const acExitCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(invX + trunkLen / 2 + 0.028, invY - bodyH / 2 - 0.085, invZ + 0.08),
+      new THREE.Vector3(0.53, invY - bodyH / 2 - 0.07, invZ + 0.08),
+      new THREE.Vector3(0.58, -0.04, invZ + 0.06)
+    ]);
+    this.microAcExitCurve = acExitCurve;
+    const acExitGeo = new THREE.TubeGeometry(acExitCurve, 16, 0.007, 12, false);
+    const acExitMesh = new THREE.Mesh(acExitGeo, darkAlumMat);
+    acExitMesh.castShadow = true;
+    inverterGroup.add(acExitMesh);
+
     return inverterGroup;
   }
 

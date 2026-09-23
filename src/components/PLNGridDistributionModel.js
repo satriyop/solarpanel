@@ -503,6 +503,11 @@ export class PLNGridDistributionModel {
     // COMPONENT E: Interconnecting Galvanized Metallic EMT Conduits
     // -------------------------------------------------------------
     this.initConduitNetwork(emtConduitMat, brassGlandMat, copperGroundMat);
+
+    // -------------------------------------------------------------
+    // COMPONENT F: Household Consumer Main Distribution Panel (Beban Rumah)
+    // -------------------------------------------------------------
+    this.initConsumerLoadUnit(enclosureMat, darkEnclosureMat, smokedCoverMat, brassGlandMat, emtConduitMat);
   }
 
   /**
@@ -512,7 +517,39 @@ export class PLNGridDistributionModel {
   initConduitNetwork(emtMat, brassMat, copperMat) {
     this.conduitGroup = new THREE.Group();
 
-    // 1. Incoming Utility PLN Service Feeder Conduit (Top of PLN Meter dropping from roof/pole)
+    // 1. Incoming Utility PLN Aerial Service Drop (Kabel Twisted NFA2X-T 2×10mm² dari Tiang Listrik PLN JTR 220V 50Hz)
+    const aerialCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.62, 0.96, 0.12),
+      new THREE.Vector3(-0.48, 0.90, 0.08),
+      new THREE.Vector3(-0.32, 0.83, 0.04),
+      new THREE.Vector3(-0.16, 0.74, 0.01)
+    ]);
+    this.plnAerialCurve = aerialCurve;
+
+    const aerialGeo = new THREE.TubeGeometry(aerialCurve, 32, 0.0075, 12, false);
+    const aerialMat = new THREE.MeshStandardMaterial({
+      color: 0x181a1e,
+      roughness: 0.85,
+      metalness: 0.1
+    });
+    this.fadeMaterials.push(aerialMat);
+    const aerialMesh = new THREE.Mesh(aerialGeo, aerialMat);
+    aerialMesh.castShadow = true;
+    aerialMesh.userData.isPlnAerialDrop = true;
+    aerialMesh.userData.tooltipTitle = "Saluran Masuk Pelayanan PLN (NFA2X-T 2×10mm²)";
+    aerialMesh.userData.tooltipDesc = "Kabel udara twisted 2-kawat dari Tiang Distribusi JTR PLN membawa daya 220V 50Hz ke kWh meter.";
+    this.conduitGroup.add(aerialMesh);
+
+    // Service Entrance Wedge Tension Dead-End Clamp (Wedge Clamp NFA2X)
+    const wedgeGeo = new THREE.BoxGeometry(0.024, 0.045, 0.028);
+    const wedgeMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
+    this.fadeMaterials.push(wedgeMat);
+    const wedge = new THREE.Mesh(wedgeGeo, wedgeMat);
+    wedge.position.set(-0.46, 0.89, 0.08);
+    wedge.rotation.z = Math.PI / 6;
+    this.conduitGroup.add(wedge);
+
+    // 1b. Service Entrance Conduit Mast & Weatherhead (Dropping to PLN Meter)
     const plnFeederGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.32, 16);
     const plnFeeder = new THREE.Mesh(plnFeederGeo, emtMat);
     plnFeeder.position.set(-0.16, 0.58, 0.01);
@@ -582,12 +619,20 @@ export class PLNGridDistributionModel {
     const rs485Conduit = new THREE.Mesh(rs485ConduitGeo, rs485Mat);
     this.conduitGroup.add(rs485Conduit);
 
-    // 7. Essential Loads Exit Conduit (Dropping down towards house sub-panel / circuit distribution)
-    const essentialLoadsGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.32, 16);
+    // 7. Combined Solar + PLN AC Conduit entering Consumer Main Distribution Panel
+    const essentialLoadsGeo = new THREE.CylinderGeometry(0.013, 0.013, 0.11, 16);
     const essentialLoadsConduit = new THREE.Mesh(essentialLoadsGeo, emtMat);
-    essentialLoadsConduit.position.set(0.16, -0.44, 0.01);
+    essentialLoadsConduit.position.set(0.16, -0.335, 0.01);
     essentialLoadsConduit.userData.isAcCombiner = true;
     this.conduitGroup.add(essentialLoadsConduit);
+
+    // Compression coupling into Consumer Unit
+    const coupGeo = new THREE.CylinderGeometry(0.017, 0.017, 0.016, 16);
+    const coupMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.3 });
+    this.fadeMaterials.push(coupMat);
+    const coup = new THREE.Mesh(coupGeo, coupMat);
+    coup.position.set(0.16, -0.39, 0.01);
+    this.conduitGroup.add(coup);
 
     // 8. Copper PE Grounding Busbar & Grounding Rod Conductor (PUIL 2011)
     const groundBarGeo = new THREE.BoxGeometry(0.18, 0.016, 0.008);
@@ -610,7 +655,7 @@ export class PLNGridDistributionModel {
       { x: -0.16, y: 0.48, z: 0.01, rotZ: 0 },
       { x: 0.42, y: -0.12, z: 0.01, rotZ: 0 },
       { x: 0.65, y: -0.38, z: 0.01, rotZ: Math.PI / 2 },
-      { x: 0.16, y: -0.36, z: 0.01, rotZ: 0 }
+      { x: 0.16, y: -0.31, z: 0.01, rotZ: 0 }
     ].forEach((s) => {
       const strap = new THREE.Mesh(strapGeo, strapMat);
       strap.rotation.z = s.rotZ;
@@ -619,6 +664,127 @@ export class PLNGridDistributionModel {
     });
 
     this.group.add(this.conduitGroup);
+  }
+
+  /**
+   * Builds the Household Consumer Main Distribution Panel (Kotak MCB Beban Rumah Tangga)
+   * mounted below the AC Combiner / ATS board at Y = -0.48m.
+   * Serves as the Point of Common Coupling (PCC) where PLN and Solar AC merge (Kirchhoff Law)
+   * to power home appliances (Air Conditioner, Refrigerator, Lighting & Wi-Fi).
+   */
+  initConsumerLoadUnit(enclosureMat, darkMat, smokedMat, brassMat, emtMat) {
+    this.consumerGroup = new THREE.Group();
+    this.consumerGroup.position.set(0.16, -0.47, 0.01);
+
+    // 1. Consumer Unit Main Enclosure (ABS/Polycarbonate)
+    const boxW = 0.25;
+    const boxH = 0.15;
+    const boxD = 0.075;
+    const boxGeo = new THREE.BoxGeometry(boxW, boxH, boxD);
+    const boxMesh = new THREE.Mesh(boxGeo, enclosureMat);
+    boxMesh.castShadow = true;
+    boxMesh.receiveShadow = true;
+    boxMesh.userData.isConsumerLoadUnit = true;
+    boxMesh.userData.tooltipTitle = "Kotak MCB Distribusi Beban Rumah (900W)";
+    boxMesh.userData.tooltipDesc = "Titik Temu Listrik (Point of Common Coupling / PCC): Daya PLTS dan Daya PLN bergabung menyuplai beban AC (600W), Kulkas (150W), dan Lampu/Wi-Fi (150W).";
+    this.consumerGroup.add(boxMesh);
+
+    // Front Trim Bezel
+    const bezelGeo = new THREE.BoxGeometry(boxW + 0.01, boxH + 0.01, 0.01);
+    const bezel = new THREE.Mesh(bezelGeo, darkMat);
+    bezel.position.set(0, 0, boxD / 2);
+    this.consumerGroup.add(bezel);
+
+    // 2. Tinted Smoked Acrylic Inspection Window
+    const winGeo = new THREE.BoxGeometry(0.19, 0.08, 0.016);
+    const winMesh = new THREE.Mesh(winGeo, smokedMat);
+    winMesh.position.set(0, 0.008, boxD / 2 + 0.006);
+    winMesh.userData.isConsumerLoadUnit = true;
+    this.consumerGroup.add(winMesh);
+
+    // 3. Steel DIN Rail Inside Panel
+    const dinGeo = new THREE.BoxGeometry(0.18, 0.015, 0.004);
+    const dinMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+    this.fadeMaterials.push(dinMat);
+    const dinRail = new THREE.Mesh(dinGeo, dinMat);
+    dinRail.position.set(0, 0.008, boxD / 2 - 0.01);
+    this.consumerGroup.add(dinRail);
+
+    // 4. Three Miniature Circuit Breakers (MCB 1P C10, C6, C4)
+    this.loadCircuitLeds = [];
+    const mcbW = 0.018;
+    const mcbH = 0.046;
+    const mcbD = 0.024;
+    const mcbGeo = new THREE.BoxGeometry(mcbW, mcbH, mcbD);
+    const mcbMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.1 });
+    this.fadeMaterials.push(mcbMat);
+
+    const toggleGeo = new THREE.BoxGeometry(0.007, 0.012, 0.01);
+    const toggleMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.3 });
+    this.fadeMaterials.push(toggleMat);
+
+    const ledGeo = new THREE.SphereGeometry(0.0035, 12, 12);
+    const ledMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 2.2,
+      roughness: 0.2
+    });
+    this.fadeMaterials.push(ledMat);
+    this.loadLedMat = ledMat;
+
+    const circuitDefs = [
+      { name: 'AC (600W)', x: -0.05 },
+      { name: 'Kulkas (150W)', x: 0.0 },
+      { name: 'Lampu/Wi-Fi (150W)', x: 0.05 }
+    ];
+
+    circuitDefs.forEach((c) => {
+      // MCB body
+      const mcb = new THREE.Mesh(mcbGeo, mcbMat);
+      mcb.position.set(c.x, 0.008, boxD / 2);
+      this.consumerGroup.add(mcb);
+
+      // MCB toggle lever (ON position)
+      const toggle = new THREE.Mesh(toggleGeo, toggleMat);
+      toggle.position.set(c.x, 0.014, boxD / 2 + mcbD / 2);
+      this.consumerGroup.add(toggle);
+
+      // Active Circuit LED Status Light
+      const led = new THREE.Mesh(ledGeo, ledMat);
+      led.position.set(c.x, 0.034, boxD / 2 + 0.004);
+      this.consumerGroup.add(led);
+      this.loadCircuitLeds.push(led);
+    });
+
+    // 5. Three Bottom Branch Conduits (Feeding AC, Refrigerator, Lighting/Wi-Fi)
+    this.loadBranchCurves = [];
+    const inGlandGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.014, 16);
+    const branchOffsets = [-0.06, 0.0, 0.06];
+
+    branchOffsets.forEach((bx, idx) => {
+      // Gland on bottom
+      const bGland = new THREE.Mesh(inGlandGeo, brassMat);
+      bGland.position.set(bx, -boxH / 2 - 0.007, 0);
+      this.consumerGroup.add(bGland);
+
+      // Branch conduit curve dropping into building
+      const spreadX = (idx - 1) * 0.04;
+      const bCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0.16 + bx, -0.47 - boxH / 2 - 0.014, 0.01),
+        new THREE.Vector3(0.16 + bx + spreadX * 0.5, -0.62, 0.01),
+        new THREE.Vector3(0.16 + bx + spreadX, -0.74, 0.01)
+      ]);
+      this.loadBranchCurves.push(bCurve);
+
+      const bGeo = new THREE.TubeGeometry(bCurve, 16, 0.008, 12, false);
+      const bMesh = new THREE.Mesh(bGeo, emtMat);
+      bMesh.castShadow = true;
+      bMesh.userData.isConsumerUnit = true;
+      this.group.add(bMesh);
+    });
+
+    this.group.add(this.consumerGroup);
   }
 
   /**
