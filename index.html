@@ -128,16 +128,16 @@
           </div>
         </div>
 
-        <!-- Dual-Source Kirchhoff Energy Balance (Permen ESDM 2/2024 Self-Consumption) -->
+        <!-- Dual-Source Kirchhoff Energy Balance & EPS Microgrid Controller -->
         <div class="kirchhoff-balance-card">
           <div class="kirchhoff-header">
             <div class="kirchhoff-title">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
               </svg>
-              <span>DUAL-SOURCE LOAD MIX (900W)</span>
+              <span id="title-energy-balance">LOAD MIX (900W)</span>
             </div>
-            <span class="kirchhoff-badge" title="Permen ESDM No. 2/2024 Zero-Export Rule">ZERO-EXPORT PCC</span>
+            <span id="badge-energy-balance" class="kirchhoff-badge" title="Status Titik Temu Listrik (PCC)">ZERO-EXPORT PCC</span>
           </div>
 
           <div class="kirchhoff-bar-container">
@@ -148,20 +148,46 @@
           <div class="kirchhoff-split-labels">
             <div class="split-col solar-col">
               <span class="split-dot solar-dot"></span>
-              <span class="split-name">Solar:</span>
+              <span id="label-solar-split" class="split-name">Solar:</span>
               <strong id="val-solar-split">405W (45%)</strong>
             </div>
             <div class="split-col pln-col">
-              <span class="split-dot pln-dot"></span>
-              <span class="split-name">PLN:</span>
+              <span id="dot-secondary-source" class="split-dot pln-dot"></span>
+              <span id="label-secondary-split" class="split-name">PLN:</span>
               <strong id="val-pln-split">495W (55%)</strong>
             </div>
           </div>
 
+          <!-- BESS Islanded Telemetry Row (Active during Off-Grid EPS mode) -->
+          <div id="bess-autonomy-row" class="bess-autonomy-row" style="display: none;">
+            <div class="bess-stat-item">
+              <span class="bess-stat-label">BESS AUTONOMY</span>
+              <span id="val-bess-runtime" class="bess-stat-val">10.0 Jam</span>
+            </div>
+            <div class="bess-stat-item">
+              <span class="bess-stat-label">GRID-FORMING</span>
+              <span class="bess-stat-val" style="color: #f59e0b;">220V 50Hz</span>
+            </div>
+            <div class="bess-stat-item">
+              <span class="bess-stat-label">AIR-GAP ISOLASI</span>
+              <span class="bess-stat-val" style="color: #ef4444;">&lt;10ms IEC</span>
+            </div>
+          </div>
+
+          <!-- Interactive Circuit Breakers (Load Shedding Toggles on Consumer Unit) -->
           <div class="kirchhoff-loads-row">
-            <span class="load-pill" title="Sirkuit Cabang 1: AC Inverter (MCB C10)">❄️ AC: 600W</span>
-            <span class="load-pill" title="Sirkuit Cabang 2: Kulkas Inverter (MCB C6)">🧊 Kulkas: 150W</span>
-            <span class="load-pill" title="Sirkuit Cabang 3: Lampu & Wi-Fi (MCB C4)">💡 Lampu: 150W</span>
+            <button id="btn-circuit-ac" class="load-pill load-pill-toggle active" data-circuit="0" title="Klik untuk Load Shedding: MCB Sirkuit AC Inverter (600W)">
+              <span class="mcb-status-dot"></span>
+              <span class="mcb-label">❄️ AC: 600W</span>
+            </button>
+            <button id="btn-circuit-fridge" class="load-pill load-pill-toggle active" data-circuit="1" title="Klik untuk Load Shedding: MCB Sirkuit Kulkas Inverter (150W)">
+              <span class="mcb-status-dot"></span>
+              <span class="mcb-label">🧊 Kulkas: 150W</span>
+            </button>
+            <button id="btn-circuit-lights" class="load-pill load-pill-toggle active" data-circuit="2" title="Klik untuk Load Shedding: MCB Sirkuit Lampu & Wi-Fi (150W)">
+              <span class="mcb-status-dot"></span>
+              <span class="mcb-label">💡 Lampu: 150W</span>
+            </button>
           </div>
         </div>
       </div>

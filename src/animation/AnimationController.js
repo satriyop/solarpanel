@@ -203,6 +203,47 @@ export class AnimationController {
     this.scene.controls.addEventListener('end', () => {
       this.isHoveringOrDragging = false;
     });
+
+    // 3D Raycasting click interaction (e.g. clicking MCB levers in Consumer Unit)
+    let pointerDownTime = 0;
+    let pointerDownPos = { x: 0, y: 0 };
+    const dom = this.scene.renderer.domElement;
+
+    dom.addEventListener('pointerdown', (e) => {
+      pointerDownTime = performance.now();
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    dom.addEventListener('pointerup', (e) => {
+      const dt = performance.now() - pointerDownTime;
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dt < 350 && dist < 8) {
+        this.handleClick(e);
+      }
+    });
+  }
+
+  handleClick(e) {
+    if (!this.plnDistribution || !this.plnDistribution.isVisible) return;
+    const rect = this.scene.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.scene.camera);
+
+    const clickableMeshes = [];
+    this.plnDistribution.group.traverse((child) => {
+      if (child.isMesh && child.userData.isMcbToggle) {
+        clickableMeshes.push(child);
+      }
+    });
+
+    const hits = this.raycaster.intersectObjects(clickableMeshes, false);
+    if (hits.length > 0) {
+      const cIdx = hits[0].object.userData.circuitIndex;
+      if (typeof this.onCircuitToggle === 'function') {
+        this.onCircuitToggle(cIdx);
+      }
+    }
   }
 
   /**
@@ -909,7 +950,10 @@ export class AnimationController {
     if (this.plnDistribution && this.plnDistribution.isVisible) {
       this.plnDistribution.group.traverse(child => {
         if (child.isMesh && child.material.visible !== false) {
-          if (child.userData.isPlnAerialDrop) {
+          if (child.userData.isMcbToggle) {
+            child.userData.parentLayerId = 'consumerLoadUnit';
+            meshes.push(child);
+          } else if (child.userData.isPlnAerialDrop) {
             child.userData.parentLayerId = 'plnAerialDrop';
             meshes.push(child);
           } else if (child.userData.isConsumerLoadUnit || child.userData.isConsumerUnit) {
@@ -935,6 +979,30 @@ export class AnimationController {
     const intersects = this.raycaster.intersectObjects(meshes, false);
 
     if (intersects.length > 0) {
+      if (intersects[0].object.userData.isMcbToggle) {
+        this.scene.renderer.domElement.style.cursor = 'pointer';
+        const cIdx = intersects[0].object.userData.circuitIndex;
+        const circuitTitles = ['MCB Sirkuit 1: AC Inverter (600W)', 'MCB Sirkuit 2: Kulkas Inverter (150W)', 'MCB Sirkuit 3: Lampu & Wi-Fi (150W)'];
+        if (this.tooltipEl) {
+          this.tooltipEl.innerHTML = `
+            <div class="tooltip-header">
+              <span class="tooltip-dot" style="background: #10b981;"></span>
+              <strong>${circuitTitles[cIdx] || 'MCB Beban Rumah'}</strong>
+            </div>
+            <div class="tooltip-mat">Miniature Circuit Breaker (MCB 1P) • Klik untuk Sakelar</div>
+            <div class="tooltip-desc">Klik tuas MCB ini untuk mematikan/menyalakan sirkuit (Load Shedding saat pemadaman PLN / Off-Grid EPS).</div>
+          `;
+          const left = Math.min(window.innerWidth - 320, e.clientX + 16);
+          const top = Math.min(window.innerHeight - 120, e.clientY + 16);
+          this.tooltipEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+          this.tooltipEl.style.opacity = '1';
+          this.tooltipEl.style.pointerEvents = 'none';
+          return;
+        }
+      } else {
+        this.scene.renderer.domElement.style.cursor = 'default';
+      }
+
       const hitLayerId = intersects[0].object.userData.parentLayerId;
       const spec = this.layerSpecs[hitLayerId];
 
@@ -962,6 +1030,7 @@ export class AnimationController {
   }
 
   hideTooltip() {
+    this.scene.renderer.domElement.style.cursor = 'default';
     if (this.tooltipEl) {
       this.tooltipEl.style.opacity = '0';
     }

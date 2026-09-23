@@ -20,6 +20,7 @@ export class PowerFlowController {
 
     this.isVisible = false;
     this.gridTopology = 'ongrid'; // 'ongrid' or 'offgrid'
+    this.activeLoads = [true, true, true]; // Circuit 0: AC (600W), 1: Fridge (150W), 2: Lights (150W)
     this.clock = new THREE.Clock();
     this.time = 0;
 
@@ -329,6 +330,13 @@ export class PowerFlowController {
     }
   }
 
+  /**
+   * Sets active circuit states for load shedding simulation ([ac, fridge, lights])
+   */
+  setActiveLoads(loads) {
+    this.activeLoads = loads;
+  }
+
   setVisible(visible) {
     this.isVisible = visible;
     this.group.visible = visible;
@@ -486,19 +494,38 @@ export class PowerFlowController {
       this.centralInverter.setLedPulse(pulseIntensity * powerFactor);
       this.centralInverter.updateTelemetry(currentWatts, this.gridTopology);
 
-      // E. Animate Battery Storage Charging Particles (Inverter to Battery)
+      // E. Animate Battery Storage Particles (Bi-directional Charge / Discharge)
       if (this.batteryStorage && this.batteryStorage.isVisible) {
+        const isOffGrid = (this.gridTopology === 'offgrid');
+        const homeWatts = Math.max(1, (this.activeLoads[0] ? 600 : 0) + (this.activeLoads[1] ? 150 : 0) + (this.activeLoads[2] ? 150 : 0));
+        const isDischarging = isOffGrid && (currentWatts < homeWatts);
+        const dischargeDeficit = isDischarging ? (homeWatts - currentWatts) : 0;
+        const bessRate = isDischarging ? Math.min(1.0, dischargeDeficit / homeWatts) : powerFactor;
+
         if (this.batteryChargeParticles && this.batteryStorage.conduitCurve) {
           const pt = new THREE.Vector3();
           this.batteryChargeParticles.forEach((p) => {
-            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
-            this.batteryStorage.conduitCurve.getPoint(p.t, pt);
-            p.sprite.position.copy(pt);
-            p.sprite.visible = this.isVisible;
-            p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * powerFactor;
+            if (isDischarging) {
+              // Discharging in Off-Grid mode: Particles flow backwards from Battery (1.0) into Central Inverter (0.0)
+              p.t = (p.t + p.speed * (0.35 + 0.65 * bessRate) * delta) % 1.0;
+              const flowPos = 1.0 - p.t;
+              this.batteryStorage.conduitCurve.getPoint(flowPos, pt);
+              p.sprite.position.copy(pt);
+              p.sprite.visible = this.isVisible;
+              p.sprite.material.color.setHex(0xf59e0b); // Amber battery discharge energy
+              p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * (0.4 + 0.6 * bessRate);
+            } else {
+              // Charging: Particles flow from Central Inverter (0.0) into Battery (1.0)
+              p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+              this.batteryStorage.conduitCurve.getPoint(p.t, pt);
+              p.sprite.position.copy(pt);
+              p.sprite.visible = this.isVisible;
+              p.sprite.material.color.setHex(0x10b981); // Emerald charging energy
+              p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * powerFactor;
+            }
           });
         }
-        const chargePulse = 0.5 + 0.5 * Math.sin(this.time * 4.0 * powerFactor);
+        const chargePulse = 0.5 + 0.5 * Math.sin(this.time * (isDischarging ? 6.0 : 4.0));
         this.batteryStorage.setLedPulse(chargePulse);
       } else if (this.batteryChargeParticles) {
         this.batteryChargeParticles.forEach(p => p.sprite.visible = false);
@@ -507,13 +534,13 @@ export class PowerFlowController {
       // F. Animate PLN Grid Distribution Board & Household Consumer Load Unit
       if (this.plnDistribution && this.plnDistribution.isVisible) {
         const isOffGrid = (this.gridTopology === 'offgrid');
-        const homeWatts = 900; // Base household consumption (Air Conditioner + Kulkas + Lampu/Wi-Fi)
-        const solarEffectiveWatts = Math.min(currentWatts, homeWatts);
+        const homeWatts = Math.max(0, (this.activeLoads[0] ? 600 : 0) + (this.activeLoads[1] ? 150 : 0) + (this.activeLoads[2] ? 150 : 0));
+        const solarEffectiveWatts = Math.min(currentWatts, Math.max(1, homeWatts));
         const plnEffectiveWatts = isOffGrid ? 0 : Math.max(0, homeWatts - solarEffectiveWatts);
 
         // Normalized power contribution ratios (Kirchhoff: P_load = P_solar + P_pln)
-        const plnRatio = isOffGrid ? 0.0 : (plnEffectiveWatts / homeWatts);
-        const solarRatio = isOffGrid ? 1.0 : (solarEffectiveWatts / homeWatts);
+        const plnRatio = (isOffGrid || homeWatts === 0) ? 0.0 : (plnEffectiveWatts / homeWatts);
+        const solarRatio = homeWatts === 0 ? 0.0 : (solarEffectiveWatts / homeWatts);
 
         // 1. PLN Utility Feeder Line Particles (Aerial Drop -> Meter -> DDSU666)
         if (this.plnGridParticles) {
@@ -558,7 +585,7 @@ export class PowerFlowController {
         if (this.inverterToPlnParticles && this.plnDistribution.invAcConduitCurve) {
           const pt = new THREE.Vector3();
           this.inverterToPlnParticles.forEach((p) => {
-            p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
+            p.t = (p.t + p.speed * (powerFactor > 0.05 ? powerFactor : 0.3) * delta) % 1.0;
             this.plnDistribution.invAcConduitCurve.getPoint(1.0 - p.t, pt);
             p.sprite.position.copy(pt);
             p.sprite.visible = this.isVisible;
@@ -568,7 +595,7 @@ export class PowerFlowController {
             } else {
               p.sprite.material.color.setHex(0x06b6d4); // AC Self-Consumption
             }
-            p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * powerFactor;
+            p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * (powerFactor > 0.05 ? powerFactor : 0.4);
           });
         }
 
@@ -583,7 +610,7 @@ export class PowerFlowController {
             } else {
               p.sprite.material.color.setHex(solarRatio > 0.6 ? 0x06b6d4 : 0x10b981);
             }
-            p.sprite.material.opacity = 0.75 + 0.25 * Math.sin(p.t * Math.PI);
+            p.sprite.material.opacity = homeWatts === 0 ? 0.0 : (0.75 + 0.25 * Math.sin(p.t * Math.PI));
           });
         }
 
@@ -591,6 +618,11 @@ export class PowerFlowController {
         if (this.consumerBranchParticles) {
           const pt = new THREE.Vector3();
           this.consumerBranchParticles.forEach((p) => {
+            const isCircuitActive = this.activeLoads && this.activeLoads[p.bIdx];
+            if (!isCircuitActive) {
+              p.sprite.visible = false;
+              return;
+            }
             p.t = (p.t + p.speed * (0.3 + 0.7 * (solarRatio * 0.5 + plnRatio * 0.5)) * delta) % 1.0;
             p.curve.getPoint(p.t, pt);
             p.sprite.position.copy(pt);

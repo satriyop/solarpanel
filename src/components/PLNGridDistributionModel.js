@@ -733,28 +733,43 @@ export class PLNGridDistributionModel {
     this.fadeMaterials.push(ledMat);
     this.loadLedMat = ledMat;
 
+    this.circuitSwitches = [];
+    this.loadCircuitLeds = [];
+
     const circuitDefs = [
       { name: 'AC (600W)', x: -0.05 },
       { name: 'Kulkas (150W)', x: 0.0 },
       { name: 'Lampu/Wi-Fi (150W)', x: 0.05 }
     ];
 
-    circuitDefs.forEach((c) => {
+    circuitDefs.forEach((c, idx) => {
       // MCB body
       const mcb = new THREE.Mesh(mcbGeo, mcbMat);
       mcb.position.set(c.x, 0.008, boxD / 2);
+      mcb.userData.isMcbToggle = true;
+      mcb.userData.circuitIndex = idx;
       this.consumerGroup.add(mcb);
 
       // MCB toggle lever (ON position)
       const toggle = new THREE.Mesh(toggleGeo, toggleMat);
       toggle.position.set(c.x, 0.014, boxD / 2 + mcbD / 2);
+      toggle.userData.isMcbToggle = true;
+      toggle.userData.circuitIndex = idx;
       this.consumerGroup.add(toggle);
+      this.circuitSwitches.push(toggle);
 
-      // Active Circuit LED Status Light
-      const led = new THREE.Mesh(ledGeo, ledMat);
+      // Active Circuit LED Status Light (Individual material for per-circuit control)
+      const indLedMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        emissive: 0x10b981,
+        emissiveIntensity: 2.2,
+        roughness: 0.2
+      });
+      this.fadeMaterials.push(indLedMat);
+      const led = new THREE.Mesh(ledGeo, indLedMat);
       led.position.set(c.x, 0.034, boxD / 2 + 0.004);
       this.consumerGroup.add(led);
-      this.loadCircuitLeds.push(led);
+      this.loadCircuitLeds.push({ mesh: led, mat: indLedMat, active: true });
     });
 
     // 5. Three Bottom Branch Conduits (Feeding AC, Refrigerator, Lighting/Wi-Fi)
@@ -788,12 +803,57 @@ export class PLNGridDistributionModel {
   }
 
   /**
+   * Sets individual branch circuit breaker state and indicator LED (Load Shedding)
+   */
+  setCircuitState(index, active) {
+    if (this.circuitSwitches && this.circuitSwitches[index]) {
+      const toggle = this.circuitSwitches[index];
+      // Animate lever: ON (Y = 0.014, rot.x = 0) vs OFF (Y = 0.005, rot.x = 0.5)
+      gsap.to(toggle.position, {
+        y: active ? 0.014 : 0.005,
+        duration: 0.25,
+        ease: 'power2.out'
+      });
+      gsap.to(toggle.rotation, {
+        x: active ? 0 : 0.45,
+        duration: 0.25,
+        ease: 'power2.out'
+      });
+    }
+
+    if (this.loadCircuitLeds && this.loadCircuitLeds[index]) {
+      const ledItem = this.loadCircuitLeds[index];
+      ledItem.active = active;
+      if (active) {
+        ledItem.mat.color.setHex(0x10b981);
+        ledItem.mat.emissive.setHex(0x10b981);
+        ledItem.mat.emissiveIntensity = 2.2;
+      } else {
+        ledItem.mat.color.setHex(0x334155);
+        ledItem.mat.emissive.setHex(0x000000);
+        ledItem.mat.emissiveIntensity = 0.0;
+      }
+    }
+  }
+
+  /**
    * Switches grid operational mode: 'ongrid' (PLN Normal) vs 'offgrid' (EPS Islanded Backup)
    */
   setGridMode(mode) {
     this.gridMode = mode;
     const isOffGrid = (mode === 'offgrid');
 
+    // 1. Update PLN Smart Meter LCD screen texture (Blackout 0V warning vs normal AMI)
+    if (this.plnMeterTex && this.plnMeterTex.updateScreen) {
+      this.plnMeterTex.updateScreen(mode);
+    }
+
+    // 2. Update ATS Switch faceplate texture (Posisi I PLN vs Posisi II EPS)
+    if (this.atsFaceTex && this.atsFaceTex.updateScreen) {
+      this.atsFaceTex.updateScreen(mode);
+    }
+
+    // 3. Mechanically throw ATS changeover lever arm
     if (this.atsLeverGroup) {
       // Position I (PLN Grid Normal: -25 deg / -0.44 rad) vs Position II (EPS Islanded: +25 deg / +0.44 rad)
       const targetRot = isOffGrid ? 0.44 : -0.44;
@@ -804,6 +864,7 @@ export class PLNGridDistributionModel {
       });
     }
 
+    // 4. Update ATS indication LEDs
     if (this.atsPlnLedMat && this.atsEpsLedMat) {
       if (isOffGrid) {
         // PLN is blacked out / isolated
@@ -816,9 +877,9 @@ export class PLNGridDistributionModel {
       }
     }
 
-    // Pulse PLN calibration LED only when on-grid
+    // 5. Pulse PLN calibration LED only when on-grid (completely dark when off-grid blackout)
     if (this.plnPulseLedMat) {
-      this.plnPulseLedMat.opacity = isOffGrid ? 0.1 : 0.95;
+      this.plnPulseLedMat.opacity = isOffGrid ? 0.0 : 0.95;
     }
   }
 

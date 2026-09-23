@@ -74,6 +74,50 @@ window.addEventListener('DOMContentLoaded', () => {
   const barPlnShare = document.getElementById('bar-pln-share');
   const valSolarSplit = document.getElementById('val-solar-split');
   const valPlnSplit = document.getElementById('val-pln-split');
+  const titleEnergyBalance = document.getElementById('title-energy-balance');
+  const badgeEnergyBalance = document.getElementById('badge-energy-balance');
+  const labelSolarSplit = document.getElementById('label-solar-split');
+  const dotSecondarySource = document.getElementById('dot-secondary-source');
+  const labelSecondarySplit = document.getElementById('label-secondary-split');
+  const bessAutonomyRow = document.getElementById('bess-autonomy-row');
+  const valBessRuntime = document.getElementById('val-bess-runtime');
+  const btnCircuitAc = document.getElementById('btn-circuit-ac');
+  const btnCircuitFridge = document.getElementById('btn-circuit-fridge');
+  const btnCircuitLights = document.getElementById('btn-circuit-lights');
+
+  // Consumer Load Unit Branch Circuits for Load Shedding Simulation
+  const circuits = [
+    { id: 'ac', name: 'AC Inverter', watts: 600, active: true, btn: btnCircuitAc },
+    { id: 'fridge', name: 'Kulkas Inverter', watts: 150, active: true, btn: btnCircuitFridge },
+    { id: 'lights', name: 'Lampu & Wi-Fi', watts: 150, active: true, btn: btnCircuitLights }
+  ];
+
+  function toggleCircuit(index) {
+    if (!circuits[index]) return;
+    circuits[index].active = !circuits[index].active;
+    const isNowActive = circuits[index].active;
+    if (circuits[index].btn) {
+      circuits[index].btn.classList.toggle('active', isNowActive);
+    }
+    plnDistribution.setCircuitState(index, isNowActive);
+    powerFlow.setActiveLoads(circuits.map(c => c.active));
+    updateSolarGeneration(currentSunAngle);
+
+    const circuitName = circuits[index].name;
+    const circuitWatts = circuits[index].watts;
+    if (isNowActive) {
+      showToast(`🟢 <strong>MCB ${circuitName} (${circuitWatts}W) Dihidupkan:</strong> Beban rumah bertambah.`);
+    } else {
+      showToast(`⚠️ <strong>Load Shedding: MCB ${circuitName} (${circuitWatts}W) Dimatikan:</strong> Mengurangi konsumsi daya cadangan.`);
+    }
+  }
+
+  if (btnCircuitAc) btnCircuitAc.addEventListener('click', () => toggleCircuit(0));
+  if (btnCircuitFridge) btnCircuitFridge.addEventListener('click', () => toggleCircuit(1));
+  if (btnCircuitLights) btnCircuitLights.addEventListener('click', () => toggleCircuit(2));
+
+  // Connect 3D MCB lever click from 3D scene directly to toggleCircuit
+  anim.onCircuitToggle = (index) => toggleCircuit(index);
 
   let isAutoCycleRunning = true;
   let autoCycleTimer = null;
@@ -122,10 +166,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if (mlpeAcWatts) mlpeAcWatts.textContent = `${acSolarWatts}W AC`;
     powerGaugeFill.style.width = `${pct}%`;
 
-    // Dual-Source Energy Balance calculation for Household Load (900W total)
+    // Dual-Source Energy Balance calculation for Household Load
     // Sesuai Permen ESDM No. 2/2024: 100% konsumsi mandiri tanpa ekspor ke grid (Zero-Export PCC)
-    const totalHomeLoad = 900;
+    const totalHomeLoad = circuits.reduce((sum, c) => c.active ? sum + c.watts : sum, 0);
     const isOffGrid = (currentGridMode === 'offgrid');
+
+    if (titleEnergyBalance) {
+      titleEnergyBalance.textContent = isOffGrid
+        ? (totalHomeLoad === 0 ? 'EPS BEBAN: 0W (SHED)' : `EPS ESSENTIAL LOAD (${totalHomeLoad}W)`)
+        : `LOAD MIX (${totalHomeLoad}W)`;
+    }
 
     let solarShareWatts = 0;
     let plnShareWatts = 0;
@@ -133,10 +183,22 @@ window.addEventListener('DOMContentLoaded', () => {
     let plnSharePct = 0;
 
     if (isOffGrid) {
-      solarShareWatts = Math.min(totalHomeLoad, acSolarWatts);
+      if (badgeEnergyBalance) {
+        badgeEnergyBalance.textContent = 'EPS ISLANDED (PLN 0V)';
+        badgeEnergyBalance.style.background = 'rgba(239, 68, 68, 0.15)';
+        badgeEnergyBalance.style.color = '#ef4444';
+      }
+      if (dotSecondarySource) {
+        dotSecondarySource.style.background = '#f59e0b';
+        dotSecondarySource.style.boxShadow = '0 0 4px #f59e0b';
+      }
+      if (labelSecondarySplit) labelSecondarySplit.textContent = 'BESS:';
+      if (bessAutonomyRow) bessAutonomyRow.style.display = 'flex';
+
+      solarShareWatts = totalHomeLoad === 0 ? 0 : Math.min(totalHomeLoad, acSolarWatts);
       const bessDischarge = Math.max(0, totalHomeLoad - solarShareWatts);
-      solarSharePct = Math.round((solarShareWatts / totalHomeLoad) * 100);
-      const bessPct = 100 - solarSharePct;
+      solarSharePct = totalHomeLoad === 0 ? 0 : Math.round((solarShareWatts / totalHomeLoad) * 100);
+      const bessPct = totalHomeLoad === 0 ? 0 : (100 - solarSharePct);
 
       if (barSolarShare) barSolarShare.style.width = `${solarSharePct}%`;
       if (barPlnShare) {
@@ -144,12 +206,39 @@ window.addEventListener('DOMContentLoaded', () => {
         barPlnShare.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
       }
       if (valSolarSplit) valSolarSplit.textContent = `${solarShareWatts}W (${solarSharePct}%)`;
-      if (valPlnSplit) valPlnSplit.textContent = `BESS: ${bessDischarge}W (${bessPct}%)`;
+      if (valPlnSplit) {
+        valPlnSplit.textContent = `${bessDischarge}W (${bessPct}%)`;
+        valPlnSplit.style.color = '#f59e0b';
+      }
+
+      // Autonomy calculation: 10.5 kWh usable capacity (85% SoC = 8,925 Wh reserve)
+      if (valBessRuntime) {
+        if (totalHomeLoad === 0) {
+          valBessRuntime.textContent = 'Idle (0W)';
+        } else if (bessDischarge > 0) {
+          const hours = (8925 / bessDischarge).toFixed(1);
+          valBessRuntime.textContent = `${hours} Jam`;
+        } else {
+          valBessRuntime.textContent = 'Surplus (Mengisi)';
+        }
+      }
     } else {
-      solarShareWatts = Math.min(totalHomeLoad, acSolarWatts);
+      if (badgeEnergyBalance) {
+        badgeEnergyBalance.textContent = 'ZERO-EXPORT PCC';
+        badgeEnergyBalance.style.background = 'rgba(2, 132, 199, 0.1)';
+        badgeEnergyBalance.style.color = '#0284c7';
+      }
+      if (dotSecondarySource) {
+        dotSecondarySource.style.background = '#10b981';
+        dotSecondarySource.style.boxShadow = '0 0 4px #10b981';
+      }
+      if (labelSecondarySplit) labelSecondarySplit.textContent = 'PLN:';
+      if (bessAutonomyRow) bessAutonomyRow.style.display = 'none';
+
+      solarShareWatts = totalHomeLoad === 0 ? 0 : Math.min(totalHomeLoad, acSolarWatts);
       plnShareWatts = Math.max(0, totalHomeLoad - solarShareWatts);
-      solarSharePct = Math.round((solarShareWatts / totalHomeLoad) * 100);
-      plnSharePct = 100 - solarSharePct;
+      solarSharePct = totalHomeLoad === 0 ? 0 : Math.round((solarShareWatts / totalHomeLoad) * 100);
+      plnSharePct = totalHomeLoad === 0 ? 0 : (100 - solarSharePct);
 
       if (barSolarShare) barSolarShare.style.width = `${solarSharePct}%`;
       if (barPlnShare) {
@@ -157,7 +246,10 @@ window.addEventListener('DOMContentLoaded', () => {
         barPlnShare.style.background = 'linear-gradient(90deg, #10b981, #059669)';
       }
       if (valSolarSplit) valSolarSplit.textContent = `${solarShareWatts}W (${solarSharePct}%)`;
-      if (valPlnSplit) valPlnSplit.textContent = `${plnShareWatts}W (${plnSharePct}%)`;
+      if (valPlnSplit) {
+        valPlnSplit.textContent = `${plnShareWatts}W (${plnSharePct}%)`;
+        valPlnSplit.style.color = '#10b981';
+      }
     }
 
     // 3. Update 3D silicon wafer photon absorption glow
@@ -391,7 +483,7 @@ window.addEventListener('DOMContentLoaded', () => {
       powerFlow.setGridTopology('offgrid');
       centralInverter.updateTelemetry(currentWatts, 'offgrid');
 
-      showToast('⚡ <strong>Mode OFF-GRID / EPS Mandiri Aktif:</strong> PLN padam (0V). ATS memutus kontak fisik galvanis PLN (<10ms) sesuai IEC 62116. BESS 10.5kWh wajib aktif sebagai Grid-Forming penstabil tegangan 220V/50Hz untuk beban esensial.', 5500);
+      showToast('⚡ <strong>Mode OFF-GRID / EPS Mandiri Aktif:</strong> PLN padam (0V). ATS memutus kontak fisik PLN (<10ms) sesuai IEC 62116. BESS 10.5kWh membentuk grid (Grid-Forming 220V/50Hz). Anda dapat mengklik tombol MCB di kartu beban untuk melakukan <em>load shedding</em> menghemat baterai!', 6000);
     } else {
       // 1. On-grid mode
       plnDistribution.setGridMode('ongrid');

@@ -971,34 +971,67 @@ export function createPlnSmartMeterTexture() {
   ctx.lineWidth = 3;
   ctx.strokeRect(32, 108, 448, 175);
 
-  // LCD Background (Subtle olive/matrix glow)
-  ctx.fillStyle = '#091512';
-  ctx.fillRect(40, 116, 432, 159);
+  function renderLcd(mode = 'ongrid') {
+    const isOffGrid = (mode === 'offgrid');
 
-  // LCD Telemetry Matrix
-  ctx.font = 'bold 13px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#10b981';
-  ctx.fillText('● AMI ONLINE • RF-MESH / GSM CONNECTED', 52, 138);
+    // LCD Background (Dark olive for normal, dark crimson/amber for blackout)
+    ctx.fillStyle = isOffGrid ? '#180707' : '#091512';
+    ctx.fillRect(40, 116, 432, 159);
 
-  ctx.font = 'bold 28px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#f8fafc';
-  ctx.fillText('00184.6', 52, 176);
-  ctx.font = 'bold 18px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#38bdf8';
-  ctx.fillText('kWh IMPOR', 215, 176);
+    if (isOffGrid) {
+      // Blackout Emergency Display
+      ctx.font = 'bold 12.5px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('⚠️ PLN GRID FEEDER 0V • PADAM (BLACKOUT)', 52, 138);
 
-  ctx.font = '13px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText('[2.8.0] EKSPOR: 00000.0 kWh (ZERO-EXPORT)', 52, 204);
+      ctx.font = 'bold 28px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('0.00 V', 52, 176);
+      ctx.font = 'bold 18px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('0.0 Hz', 190, 176);
 
-  // Real-time grid parameters
-  ctx.font = 'bold 14px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#facc15';
-  ctx.fillText('U: 220.4V   I: 8.24A   F: 50.0Hz   Cosφ: 0.98', 52, 234);
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#f87171';
+      ctx.fillText('[ATS ISOLASI] KONTAK FISIK GALVANIS TERBUKA (<10ms)', 52, 204);
 
-  ctx.font = '11px sans-serif';
-  ctx.fillStyle = '#64748b';
-  ctx.fillText('TIDAK ADA PENGURANG TAGIHAN EKSPOR • SELF-CONSUMPTION 100%', 52, 258);
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('U: 0.0V   I: 0.00A   P: 0.00kW   Cosφ: 0.00', 52, 234);
+
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('PASOKAN EPS CADANGAN BESS 10.5kWh & INVERTER AKTIF', 52, 258);
+    } else {
+      // LCD Telemetry Matrix Normal
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#10b981';
+      ctx.fillText('● AMI ONLINE • RF-MESH / GSM CONNECTED', 52, 138);
+
+      ctx.font = 'bold 28px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText('00184.6', 52, 176);
+      ctx.font = 'bold 18px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('kWh IMPOR', 215, 176);
+
+      ctx.font = '13px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('[2.8.0] EKSPOR: 00000.0 kWh (ZERO-EXPORT)', 52, 204);
+
+      // Real-time grid parameters
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('U: 220.4V   I: 8.24A   F: 50.0Hz   Cosφ: 0.98', 52, 234);
+
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('TIDAK ADA PENGURANG TAGIHAN EKSPOR • SELF-CONSUMPTION 100%', 52, 258);
+    }
+  }
+
+  // Initial LCD render
+  renderLcd('ongrid');
 
   // Customer ID & Serial Number Card
   ctx.fillStyle = '#ffffff';
@@ -1050,6 +1083,10 @@ export function createPlnSmartMeterTexture() {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
+  texture.updateScreen = (mode) => {
+    renderLcd(mode);
+    texture.needsUpdate = true;
+  };
   return texture;
 }
 
@@ -1085,36 +1122,81 @@ export function createAtsSwitchTexture() {
   ctx.lineTo(488, 76);
   ctx.stroke();
 
-  // Schematic Diagram: PLN Grid vs EPS Backup
-  // Position I (PLN Grid)
-  ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-  ctx.fillRect(24, 94, 215, 96);
-  ctx.strokeStyle = '#10b981';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(24, 94, 215, 96);
+  function renderAts(mode = 'ongrid') {
+    const isOffGrid = (mode === 'offgrid');
 
-  ctx.fillStyle = '#10b981';
-  ctx.font = 'bold 14px "JetBrains Mono", monospace';
-  ctx.fillText('POSISI I: PLN GRID (NORMAL)', 36, 122);
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '12px "JetBrains Mono", monospace';
-  ctx.fillText('Tegangan: 220V 50Hz', 36, 146);
-  ctx.fillText('Status: GRID-TIED ACTIVE', 36, 168);
+    // Clear schematic area
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(16, 85, 480, 115);
 
-  // Position II (Inverter EPS Backup)
-  ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
-  ctx.fillRect(265, 94, 223, 96);
-  ctx.strokeStyle = '#f59e0b';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(265, 94, 223, 96);
+    // Position I (PLN Grid)
+    if (isOffGrid) {
+      ctx.fillStyle = 'rgba(100, 116, 139, 0.12)';
+      ctx.fillRect(24, 94, 215, 96);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(24, 94, 215, 96);
 
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 14px "JetBrains Mono", monospace';
-  ctx.fillText('POSISI II: INVERTER EPS (ISLANDED)', 277, 122);
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '12px "JetBrains Mono", monospace';
-  ctx.fillText('Tegangan: 220V 50Hz (V-f)', 277, 146);
-  ctx.fillText('Status: BESS BACKUP (ISOLASI PLN)', 277, 168);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('POSISI I: PLN GRID (TERPUTUS)', 36, 122);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillText('Tegangan: 0V (BLACKOUT)', 36, 146);
+      ctx.fillStyle = '#f87171';
+      ctx.fillText('Status: AIR-GAP ISOLASI (<10ms)', 36, 168);
+    } else {
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.20)';
+      ctx.fillRect(24, 94, 215, 96);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.0;
+      ctx.strokeRect(24, 94, 215, 96);
+
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('POSISI I: PLN GRID (NORMAL)', 36, 122);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText('Tegangan: 220V 50Hz', 36, 146);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('Status: GRID-TIED ACTIVE', 36, 168);
+    }
+
+    // Position II (Inverter EPS Backup)
+    if (isOffGrid) {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.28)';
+      ctx.fillRect(265, 94, 223, 96);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.0;
+      ctx.strokeRect(265, 94, 223, 96);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('POSISI II: EPS CADANGAN (AKTIF)', 277, 122);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText('Tegangan: 220V 50Hz (Grid-Forming)', 277, 146);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('Status: BESS 10.5kWh & PLTS AKTIF', 277, 168);
+    } else {
+      ctx.fillStyle = 'rgba(100, 116, 139, 0.12)';
+      ctx.fillRect(265, 94, 223, 96);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(265, 94, 223, 96);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 14px "JetBrains Mono", monospace';
+      ctx.fillText('POSISI II: EPS CADANGAN (STANDBY)', 277, 122);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText('Tegangan: Standby', 277, 146);
+      ctx.fillText('Status: SIAP SAAT PLN PADAM', 277, 168);
+    }
+  }
+
+  // Initial render
+  renderAts('ongrid');
 
   // Footer Warning: Air-gap galvanic isolation
   ctx.fillStyle = '#e2e8f0';
@@ -1123,6 +1205,10 @@ export function createAtsSwitchTexture() {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
+  texture.updateScreen = (mode) => {
+    renderAts(mode);
+    texture.needsUpdate = true;
+  };
   return texture;
 }
 
