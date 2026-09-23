@@ -224,25 +224,99 @@ export class AnimationController {
   }
 
   handleClick(e) {
-    if (!this.plnDistribution || !this.plnDistribution.isVisible) return;
     const rect = this.scene.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.scene.camera);
 
-    const clickableMeshes = [];
-    this.plnDistribution.group.traverse((child) => {
-      if (child.isMesh && child.userData.isMcbToggle) {
-        clickableMeshes.push(child);
+    // 1. Check if clicking on MCB levers in PLN Distribution Board
+    if (this.plnDistribution && this.plnDistribution.isVisible) {
+      const clickableMeshes = [];
+      this.plnDistribution.group.traverse((child) => {
+        if (child.isMesh && child.userData.isMcbToggle) {
+          clickableMeshes.push(child);
+        }
+      });
+
+      const mcbHits = this.raycaster.intersectObjects(clickableMeshes, false);
+      if (mcbHits.length > 0) {
+        const cIdx = mcbHits[0].object.userData.circuitIndex;
+        if (typeof this.onCircuitToggle === 'function') {
+          this.onCircuitToggle(cIdx);
+        }
+        return;
       }
+    }
+
+    // 2. Raycast against all interactive components (layers, inverters, battery, PLN board)
+    const meshes = [];
+    this.model.layers.forEach((layer) => {
+      layer.object.traverse((child) => {
+        if (child.isMesh && child.material.visible !== false) {
+          child.userData.parentLayerId = layer.id;
+          meshes.push(child);
+        }
+      });
     });
 
-    const hits = this.raycaster.intersectObjects(clickableMeshes, false);
+    if (this.centralInverter && this.centralInverter.isVisible) {
+      this.centralInverter.group.traverse((child) => {
+        if (child.isMesh && child.material.visible !== false) {
+          child.userData.parentLayerId = 'centralInverter';
+          meshes.push(child);
+        }
+      });
+    }
+
+    if (this.batteryStorage && this.batteryStorage.isVisible) {
+      this.batteryStorage.group.traverse((child) => {
+        if (child.isMesh && child.material.visible !== false && child.userData.isBatteryStorage) {
+          child.userData.parentLayerId = 'batteryStorage';
+          meshes.push(child);
+        }
+      });
+    }
+
+    if (this.plnDistribution && this.plnDistribution.isVisible) {
+      this.plnDistribution.group.traverse((child) => {
+        if (child.isMesh && child.material.visible !== false) {
+          child.userData.parentLayerId = 'plnDistribution';
+          meshes.push(child);
+        }
+      });
+    }
+
+    const hits = this.raycaster.intersectObjects(meshes, false);
     if (hits.length > 0) {
-      const cIdx = hits[0].object.userData.circuitIndex;
-      if (typeof this.onCircuitToggle === 'function') {
-        this.onCircuitToggle(cIdx);
+      const clickedLayerId = hits[0].object.userData.parentLayerId;
+      if (clickedLayerId) {
+        // If clicking the layer that is already focused, reset view to overview
+        if (this.focusedLayerId === clickedLayerId) {
+          this.model.focusLayer('all');
+          this.focusCameraOnLayer('all');
+        } else {
+          if (clickedLayerId === 'batteryStorage') {
+            this.model.focusLayer('all');
+            this.focusCameraOnBatteryStorage();
+          } else if (clickedLayerId === 'centralInverter') {
+            this.model.focusLayer('all');
+            this.focusCameraOnCentralInverter();
+          } else if (clickedLayerId === 'plnDistribution') {
+            this.model.focusLayer('all');
+            this.focusCameraOnPlnDistribution();
+          } else {
+            this.model.focusLayer(clickedLayerId);
+            this.focusCameraOnLayer(clickedLayerId);
+          }
+        }
+        return;
       }
+    }
+
+    // 3. If clicking empty background and currently focused on a specific layer, reset to overview
+    if (this.focusedLayerId && this.focusedLayerId !== 'all') {
+      this.model.focusLayer('all');
+      this.focusCameraOnLayer('all');
     }
   }
 

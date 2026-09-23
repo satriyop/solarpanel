@@ -57,11 +57,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnTogglePln = document.getElementById('btn-toggle-pln');
   const btnToggleBattery = document.getElementById('btn-toggle-battery');
   const btnToggleView = document.getElementById('btn-toggle-view');
-  const pillInverter = document.getElementById('pill-inverter');
-  const pillPln = document.getElementById('pill-pln');
-  const pillBattery = document.getElementById('pill-battery');
   const sunSimCard = document.querySelector('.sun-simulator-card');
-  const layerPills = document.querySelectorAll('.layer-pill');
   const mlpeAcWatts = document.getElementById('mlpe-ac-watts');
   const labelInvStat = document.getElementById('label-inv-stat');
   const labelGridStat = document.getElementById('label-grid-stat');
@@ -356,16 +352,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // 0. Update 3D annotation labels contextually (PLN, ATS, Zero-Export, Inverter, BESS)
     anim.setGridMode(mode);
 
-    // Update layer pill texts
-    if (pillPln) {
-      pillPln.innerHTML = isOffGrid ? '⚡ PLN & Proteksi (ATS Posisi II EPS)' : '⚡ PLN & Proteksi (AMI + ATS Posisi I)';
-    }
-    if (pillBattery) {
-      pillBattery.innerHTML = isOffGrid ? '🔋 BESS 10.5kWh (Wajib • Grid-Forming)' : '🔋 Home Battery (10.5kWh LFP)';
-    }
-    if (pillInverter) {
-      pillInverter.innerHTML = isOffGrid ? '8. Central Inverter (5kW EPS)' : (currentInverterMode === 'central' ? '8. Central Inverter (5kW 220V)' : '8. Microinverter (220V)');
-    }
 
     // Update Sun Simulator conversion card telemetry
     if (labelGridStat) {
@@ -398,7 +384,6 @@ window.addEventListener('DOMContentLoaded', () => {
       isPlnActive = true;
       plnDistribution.setVisible(true);
       if (btnTogglePln) btnTogglePln.classList.add('active');
-      if (pillPln) pillPln.style.display = 'inline-block';
 
       // 3. BESS Battery Storage is ENFORCED & MANDATORY (Grid-Forming V-f stabilizer)
       isBatteryActive = true;
@@ -410,7 +395,6 @@ window.addEventListener('DOMContentLoaded', () => {
         btnToggleBattery.classList.add('btn-disabled');
         btnToggleBattery.title = 'BESS wajib aktif pada mode Off-Grid sebagai pembentuk frekuensi (Grid-Forming V-f)';
       }
-      if (pillBattery) pillBattery.style.display = 'inline-block';
 
       // 4. Update physical models & particle telemetry
       plnDistribution.setGridMode('offgrid');
@@ -465,12 +449,10 @@ window.addEventListener('DOMContentLoaded', () => {
       isPlnActive = true;
       plnDistribution.setVisible(true);
       if (btnTogglePln) btnTogglePln.classList.add('active');
-      if (pillPln) pillPln.style.display = 'inline-block';
     } else {
       isPlnActive = false;
       plnDistribution.setVisible(false);
       if (btnTogglePln) btnTogglePln.classList.remove('active');
-      if (pillPln) pillPln.style.display = 'none';
     }
 
     // 6. Update HUD switcher button
@@ -479,14 +461,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (labelInverterMode) {
       labelInverterMode.textContent = isCentral ? 'Inverter: Central Hybrid (5kW 220V)' : 'Inverter: Micro (220V PLN)';
-    }
-
-    // 7. Update Layer Pill label
-    if (pillInverter) {
-      pillInverter.textContent = isCentral
-        ? (currentGridMode === 'offgrid' ? '8. Central Inverter (5kW EPS)' : '8. Central Inverter (5kW 220V)')
-        : '8. Microinverter (220V)';
-      pillInverter.dataset.layer = isCentral ? 'centralInverter' : 'inverter';
     }
 
     // 8. Update Sun Card Inverter label
@@ -523,9 +497,6 @@ window.addEventListener('DOMContentLoaded', () => {
           batteryStorage.setVisible(false);
           batteryStorage.setInterconnectVisible(false);
         }
-        if (pillBattery) {
-          pillBattery.style.display = 'none';
-        }
       }
       if (btnToggleBattery) {
         btnToggleBattery.disabled = true;
@@ -561,9 +532,6 @@ window.addEventListener('DOMContentLoaded', () => {
       isPlnActive = !isPlnActive;
       btnTogglePln.classList.toggle('active', isPlnActive);
       plnDistribution.setVisible(isPlnActive);
-      if (pillPln) {
-        pillPln.style.display = isPlnActive ? 'inline-block' : 'none';
-      }
     });
   }
 
@@ -585,10 +553,6 @@ window.addEventListener('DOMContentLoaded', () => {
       btnToggleBattery.classList.toggle('active', isBatteryActive);
       batteryStorage.setVisible(isBatteryActive);
       batteryStorage.setInterconnectVisible(isBatteryActive && (currentInverterMode === 'central'));
-
-      if (pillBattery) {
-        pillBattery.style.display = isBatteryActive ? 'inline-block' : 'none';
-      }
     });
   }
 
@@ -638,31 +602,7 @@ window.addEventListener('DOMContentLoaded', () => {
     anim.setupHoverTooltips(hoverTooltip);
   }
 
-  // Layer Filter Pills with Cinematic Macro Camera Fly-In
-  layerPills.forEach((pill) => {
-    pill.addEventListener('click', () => {
-      layerPills.forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      const layerId = pill.dataset.layer;
 
-      if (layerId === 'batteryStorage') {
-        solarPanel.focusLayer('all');
-        anim.focusCameraOnBatteryStorage();
-      } else if (layerId === 'centralInverter') {
-        solarPanel.focusLayer('all');
-        anim.focusCameraOnCentralInverter();
-      } else if (layerId === 'plnDistribution') {
-        solarPanel.focusLayer('all');
-        anim.focusCameraOnPlnDistribution();
-      } else {
-        // 1. Isolate layer opacity
-        solarPanel.focusLayer(layerId);
-
-        // 2. Cinematic Macro Camera Zoom: Fly right up to the component
-        anim.focusCameraOnLayer(layerId);
-      }
-    });
-  });
 
   // 5. Main Render Loop
   let lastTime = performance.now();

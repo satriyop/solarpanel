@@ -233,86 +233,7 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Layer Selection Pill Bar */
-.layer-pills-bar {
-  position: static;
-  display: flex;
-  gap: 6px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 4px;
-  width: 100%;
-  pointer-events: auto;
-  scroll-snap-type: x proximity;
-  mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
-}
 
-.btn-text-short {
-  display: none;
-}
-
-.btn-text-full {
-  display: inline;
-}
-
-.layer-pills-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.layer-pill {
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  white-space: nowrap;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  color: #2b303b;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  touch-action: manipulation;
-}
-
-.layer-pill:hover {
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
-}
-
-.layer-pill.active {
-  background: #0f1217;
-  color: #ffffff;
-  border-color: #0f1217;
-}
-
-.layer-pill.system-pill {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #059669;
-}
-
-.layer-pill.system-pill:hover {
-  background: rgba(16, 185, 129, 0.25);
-  border-color: #10b981;
-}
-
-.studio-dark .layer-pill.system-pill {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #34d399;
-}
-
-.studio-dark .layer-pill.system-pill.active {
-  background: #10b981;
-  color: #ffffff;
-  border-color: #10b981;
-}
 
 /* Bottom Control Dock */
 .hud-footer {
@@ -509,16 +430,6 @@ body {
   color: #9da6b5;
 }
 
-.studio-dark .layer-pill {
-  background: rgba(30, 34, 40, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #c9d1dd;
-}
-
-.studio-dark .layer-pill.active {
-  background: #ffffff;
-  color: #0f1217;
-}
 
 .studio-dark .hud-btn {
   color: #a4b0c2;
@@ -1455,29 +1366,7 @@ body {
     display: none;
   }
 
-  /* Layer Pills: Compact Swipable Bar in natural flow */
-  .layer-pills-bar {
-    width: 100%;
-    gap: 5px;
-    padding-bottom: 2px;
-  }
 
-  .layer-pill {
-    padding: 5px 10px;
-    font-size: 10.5px;
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  /* Responsive Button Text */
-  .btn-text-full {
-    display: none;
-  }
-
-  .btn-text-short {
-    display: inline;
-  }
 
   /* Mobile Bottom Control Dock: Thumb-Friendly Inverted Stack */
   .hud-footer {
@@ -1691,19 +1580,6 @@ body {
     display: none;
   }
 
-  .layer-pills-bar {
-    top: 44px;
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
-    max-width: calc(100% - 24px);
-    gap: 4px;
-  }
-
-  .layer-pill {
-    padding: 3px 8px;
-    font-size: 9.5px;
-    min-height: 26px;
-  }
 
   .hud-footer {
     bottom: max(6px, env(safe-area-inset-bottom));
