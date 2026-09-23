@@ -84,24 +84,30 @@ window.addEventListener('DOMContentLoaded', () => {
     { id: 'lights', name: 'Lampu & Wi-Fi', watts: 150, active: true, btn: btnCircuitLights }
   ];
 
-  function toggleCircuit(index) {
+  function setCircuitState(index, active, suppressToast = false) {
     if (!circuits[index]) return;
-    circuits[index].active = !circuits[index].active;
-    const isNowActive = circuits[index].active;
+    circuits[index].active = active;
     if (circuits[index].btn) {
-      circuits[index].btn.classList.toggle('active', isNowActive);
+      circuits[index].btn.classList.toggle('active', active);
     }
-    plnDistribution.setCircuitState(index, isNowActive);
+    plnDistribution.setCircuitState(index, active);
     powerFlow.setActiveLoads(circuits.map(c => c.active));
     updateSolarGeneration(currentSunAngle);
 
-    const circuitName = circuits[index].name;
-    const circuitWatts = circuits[index].watts;
-    if (isNowActive) {
-      showToast(`🟢 <strong>MCB ${circuitName} (${circuitWatts}W) Dihidupkan:</strong> Beban rumah bertambah.`);
-    } else {
-      showToast(`⚠️ <strong>Load Shedding: MCB ${circuitName} (${circuitWatts}W) Dimatikan:</strong> Mengurangi konsumsi daya cadangan.`);
+    if (!suppressToast) {
+      const circuitName = circuits[index].name;
+      const circuitWatts = circuits[index].watts;
+      if (active) {
+        showToast(`🟢 <strong>MCB ${circuitName} (${circuitWatts}W) Dihidupkan:</strong> Beban rumah bertambah.`);
+      } else {
+        showToast(`⚠️ <strong>Load Shedding: MCB ${circuitName} (${circuitWatts}W) Dimatikan:</strong> Mengurangi konsumsi daya cadangan.`);
+      }
     }
+  }
+
+  function toggleCircuit(index) {
+    if (!circuits[index]) return;
+    setCircuitState(index, !circuits[index].active, false);
   }
 
   if (btnCircuitAc) btnCircuitAc.addEventListener('click', () => toggleCircuit(0));
@@ -287,42 +293,42 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  // Solar Irradiance Simulator Toggle (Sun Orb, Beams, HUD Widget)
+  // Solar Irradiance Simulator (Sun Orb, Beams, HUD Widget)
+  function setSunSimulatorState(active) {
+    isSunSimulatorActive = active;
+    if (btnToggleSun) btnToggleSun.classList.toggle('active', active);
+    if (sunSimCard) sunSimCard.classList.toggle('active', active);
+    studio.setSunSimulatorVisible(active);
+    if (active) {
+      updateSolarGeneration(currentSunAngle);
+    } else {
+      solarPanel.setSunAbsorption(1.0);
+    }
+  }
+
   if (btnToggleSun) {
     btnToggleSun.addEventListener('click', () => {
-      isSunSimulatorActive = !isSunSimulatorActive;
-      btnToggleSun.classList.toggle('active', isSunSimulatorActive);
-      if (sunSimCard) {
-        sunSimCard.classList.toggle('active', isSunSimulatorActive);
-      }
-      studio.setSunSimulatorVisible(isSunSimulatorActive);
-      if (isSunSimulatorActive) {
-        updateSolarGeneration(currentSunAngle);
-      } else {
-        solarPanel.setSunAbsorption(1.0);
-      }
+      setSunSimulatorState(!isSunSimulatorActive);
     });
   }
 
   // Close button inside Sun Simulator card
   if (btnCloseSunCard) {
     btnCloseSunCard.addEventListener('click', () => {
-      if (isSunSimulatorActive) {
-        isSunSimulatorActive = false;
-        if (btnToggleSun) btnToggleSun.classList.remove('active');
-        if (sunSimCard) sunSimCard.classList.remove('active');
-        studio.setSunSimulatorVisible(false);
-        solarPanel.setSunAbsorption(1.0);
-      }
+      setSunSimulatorState(false);
     });
   }
 
-  // Power Flow Animation Toggle (DC from cells -> J-box -> Microinverter -> 240V AC to grid)
+  // Power Flow Animation (DC from cells -> J-box -> Inverter -> Load & Grid)
+  function setPowerFlowState(active) {
+    isPowerFlowActive = active;
+    if (btnTogglePower) btnTogglePower.classList.toggle('active', active);
+    powerFlow.setVisible(active);
+  }
+
   if (btnTogglePower) {
     btnTogglePower.addEventListener('click', () => {
-      isPowerFlowActive = !isPowerFlowActive;
-      btnTogglePower.classList.toggle('active', isPowerFlowActive);
-      powerFlow.setVisible(isPowerFlowActive);
+      setPowerFlowState(!isPowerFlowActive);
     });
   }
 
@@ -340,7 +346,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Function to switch between Grid Operational Topologies (ON-GRID vs OFF-GRID / EPS)
-  function setGridMode(mode) {
+  function setGridMode(mode, triggerCamera = true, suppressToast = false) {
     currentGridMode = mode;
     const isOffGrid = (mode === 'offgrid');
 
@@ -351,7 +357,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 0. Update 3D annotation labels contextually (PLN, ATS, Zero-Export, Inverter, BESS)
     anim.setGridMode(mode);
-
 
     // Update Sun Simulator conversion card telemetry
     if (labelGridStat) {
@@ -367,23 +372,22 @@ window.addEventListener('DOMContentLoaded', () => {
         : 'MLPE INVERTER';
     }
 
-    // Update bottom dock button titles
-    if (btnTogglePln) {
-      btnTogglePln.title = isOffGrid
-        ? 'Panel Distribusi PLN (ATS Posisi II: EPS Islanded Disconnect <10ms • PLN 0V)'
-        : 'Panel Distribusi PLN (Smart Meter AMI, Zero-Export DDSU666, ATS Posisi I, SPD Type 2)';
-    }
-
     if (isOffGrid) {
       // 1. Off-grid mode mandates Central Hybrid Inverter with ATS changeover
-      if (currentInverterMode !== 'central') {
-        setInverterArchitecture('central');
+      setInverterArchitecture('central');
+      if (btnToggleInverterMode) {
+        btnToggleInverterMode.disabled = true;
+        btnToggleInverterMode.classList.add('btn-disabled');
+        btnToggleInverterMode.title = 'Mode Off-Grid mewajibkan Central Hybrid Inverter dengan port EPS untuk pembentukan microgrid';
       }
 
       // 2. Ensure PLN Grid Distribution Board is visible to see ATS Position II and disconnect
       isPlnActive = true;
       plnDistribution.setVisible(true);
-      if (btnTogglePln) btnTogglePln.classList.add('active');
+      if (btnTogglePln) {
+        btnTogglePln.classList.add('active');
+        btnTogglePln.title = 'Panel Distribusi PLN (ATS Posisi II: EPS Islanded Disconnect <10ms • PLN 0V Blackout)';
+      }
 
       // 3. BESS Battery Storage is ENFORCED & MANDATORY (Grid-Forming V-f stabilizer)
       isBatteryActive = true;
@@ -393,32 +397,81 @@ window.addEventListener('DOMContentLoaded', () => {
         btnToggleBattery.classList.add('active');
         btnToggleBattery.disabled = true;
         btnToggleBattery.classList.add('btn-disabled');
-        btnToggleBattery.title = 'BESS wajib aktif pada mode Off-Grid sebagai pembentuk frekuensi (Grid-Forming V-f)';
+        btnToggleBattery.title = 'BESS 10.5kWh wajib aktif pada mode Off-Grid sebagai pembentuk frekuensi (Grid-Forming V-f)';
       }
 
-      // 4. Update physical models & particle telemetry
+      // 4. Automatic Load Shedding: Shed heavy non-essential AC load (600W), keep essential loads (300W total)
+      setCircuitState(0, false, true); // AC 600W shed
+      setCircuitState(1, true, true);  // Fridge 150W essential ON
+      setCircuitState(2, true, true);  // Lights 150W essential ON
+
+      // 5. Update physical models & particle telemetry
       plnDistribution.setGridMode('offgrid');
       powerFlow.setGridTopology('offgrid');
+      setPowerFlowState(true);
       centralInverter.updateTelemetry(currentWatts, 'offgrid');
 
-      showToast('⚡ <strong>Mode OFF-GRID / EPS Mandiri Aktif:</strong> PLN padam (0V). ATS memutus kontak fisik PLN (<10ms) sesuai IEC 62116. BESS 10.5kWh membentuk grid (Grid-Forming 220V/50Hz). Anda dapat mengklik tombol MCB di kartu beban untuk melakukan <em>load shedding</em> menghemat baterai!', 6000);
-    } else {
-      // 1. On-grid mode
-      plnDistribution.setGridMode('ongrid');
-      powerFlow.setGridTopology('ongrid');
-      centralInverter.updateTelemetry(currentWatts, 'ongrid');
+      // 6. Ensure telemetry card is open to show EPS microgrid balance & autonomy
+      setSunSimulatorState(true);
 
-      // 2. Re-enable battery button if in central mode
-      if (currentInverterMode === 'central' && btnToggleBattery) {
-        btnToggleBattery.disabled = false;
-        btnToggleBattery.classList.remove('btn-disabled');
-        btnToggleBattery.title = 'Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)';
+      // 7. Smooth cinematic camera fly-in towards the PLN ATS board & Battery microgrid
+      if (triggerCamera) {
+        anim.focusCameraOnPlnDistribution(1.5);
       }
 
-      showToast('🌐 <strong>Mode ON-GRID PLN Aktif:</strong> Sinkronisasi frekuensi 50Hz (Grid-Following PLL) dengan PLN 220V. Sesuai <em>Permen ESDM No. 2/2024</em>, Zero-Export DDSU666 & CT membatasi ekspor ke PLN selalu 0.00 kW (100% konsumsi mandiri).', 5500);
+      if (!suppressToast) {
+        showToast('⚡ <strong>Mode OFF-GRID / EPS Mandiri Aktif:</strong> PLN padam (0V). ATS memutus kontak fisik utilitas (<10ms) per IEEE 1547. BESS 10.5kWh membentuk tegangan (Grid-Forming 220V/50Hz). Beban non-esensial (AC 600W) otomatis di-<em>shed</em> agar cadangan baterai bertahan hingga ~30 jam!', 6500);
+      }
+    } else {
+      // 1. On-grid mode defaults: Rooftop Microinverter MLPE (220V)
+      if (btnToggleInverterMode) {
+        btnToggleInverterMode.disabled = false;
+        btnToggleInverterMode.classList.remove('btn-disabled');
+        btnToggleInverterMode.title = 'Switch between Rooftop Microinverter (MLPE) and Wall-Mounted Central String Inverter';
+      }
+      setInverterArchitecture('micro');
+
+      // 2. PLN Board active with normal utility connection
+      isPlnActive = true;
+      plnDistribution.setVisible(true);
+      if (btnTogglePln) {
+        btnTogglePln.classList.add('active');
+        btnTogglePln.title = 'Panel Distribusi PLN (Smart Meter AMI, Zero-Export DDSU666, ATS Posisi I, SPD Type 2)';
+      }
+
+      // 3. Battery is OFF by default in On-Grid (typical rooftop PV has no battery)
+      isBatteryActive = false;
+      batteryStorage.setVisible(false);
+      batteryStorage.setInterconnectVisible(false);
+      if (btnToggleBattery) {
+        btnToggleBattery.classList.remove('active');
+        btnToggleBattery.disabled = true;
+        btnToggleBattery.classList.add('btn-disabled');
+        btnToggleBattery.title = 'Baterai DC memerlukan Central Hybrid Inverter (DC-Coupled)';
+      }
+
+      // 4. Restore all household loads to normal full consumption (900W)
+      setCircuitState(0, true, true); // AC ON
+      setCircuitState(1, true, true); // Fridge ON
+      setCircuitState(2, true, true); // Lights ON
+
+      // 5. Update physical models & particle telemetry
+      plnDistribution.setGridMode('ongrid');
+      powerFlow.setGridTopology('ongrid');
+      setPowerFlowState(true);
+      centralInverter.updateTelemetry(currentWatts, 'ongrid');
+
+      // 6. Smooth cinematic camera return to overview
+      if (triggerCamera) {
+        anim.focusCameraOnLayer('all', 1.5);
+      }
+
+      if (!suppressToast) {
+        showToast('🌐 <strong>Mode ON-GRID PLN Aktif:</strong> Terhubung ke grid utilitas 220V/50Hz. Rooftop Microinverter (MLPE) aktif menyuplai konsumsi mandiri rumah (900W). Sesuai <em>Permen ESDM No. 2/2024</em>, Zero-Export DDSU666 membatasi ekspor selalu 0.00 kW.', 6000);
+      }
     }
 
-    // 5. Update energy balance gauges immediately
+    // Update energy balance gauges immediately
     updateSolarGeneration(currentSunAngle);
   }
 
@@ -509,18 +562,22 @@ window.addEventListener('DOMContentLoaded', () => {
   // Grid Mode Switcher Listeners
   if (btnModeOngrid) {
     btnModeOngrid.addEventListener('click', () => {
-      if (currentGridMode !== 'ongrid') setGridMode('ongrid');
+      if (currentGridMode !== 'ongrid') setGridMode('ongrid', true, false);
     });
   }
   if (btnModeOffgrid) {
     btnModeOffgrid.addEventListener('click', () => {
-      if (currentGridMode !== 'offgrid') setGridMode('offgrid');
+      if (currentGridMode !== 'offgrid') setGridMode('offgrid', true, false);
     });
   }
 
   // Inverter Architecture Switcher (Roof Microinverter vs Wall Central Inverter)
   if (btnToggleInverterMode) {
     btnToggleInverterMode.addEventListener('click', () => {
+      if (currentGridMode === 'offgrid') {
+        showToast('⚠️ <strong>Inverter Terkunci pada Mode EPS:</strong> Mode Off-Grid mewajibkan Central Hybrid Inverter untuk membentuk microgrid mandiri. Kembalikan ke mode ON-GRID untuk memilih Microinverter.', 4500);
+        return;
+      }
       const nextMode = (currentInverterMode === 'micro') ? 'central' : 'micro';
       setInverterArchitecture(nextMode);
     });
@@ -529,6 +586,10 @@ window.addEventListener('DOMContentLoaded', () => {
   // PLN Grid Distribution Board Toggle
   if (btnTogglePln) {
     btnTogglePln.addEventListener('click', () => {
+      if (currentGridMode === 'offgrid') {
+        showToast('⚠️ <strong>Papan PLN & ATS Wajib Tampil di Off-Grid:</strong> Papan ini memuat saklar transfer otomatis (ATS) dan MCB beban esensial yang sedang aktif.', 4000);
+        return;
+      }
       isPlnActive = !isPlnActive;
       btnTogglePln.classList.toggle('active', isPlnActive);
       plnDistribution.setVisible(isPlnActive);
@@ -553,6 +614,7 @@ window.addEventListener('DOMContentLoaded', () => {
       btnToggleBattery.classList.toggle('active', isBatteryActive);
       batteryStorage.setVisible(isBatteryActive);
       batteryStorage.setInterconnectVisible(isBatteryActive && (currentInverterMode === 'central'));
+      updateSolarGeneration(currentSunAngle);
     });
   }
 
@@ -591,10 +653,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Set default visual presets: Dark Studio & Microinverter MLPE architecture
   studio.setStudioTheme(true);
-  studio.setSunSimulatorVisible(false);
   solarPanel.setSunAbsorption(1.0);
-  setInverterArchitecture('micro');
-  setGridMode('ongrid');
+  setGridMode('ongrid', false, true);
+  setSunSimulatorState(true);
+  setPowerFlowState(true);
 
   // Interactive 3D Hover Tooltip Card
   const hoverTooltip = document.getElementById('hover-tooltip');
