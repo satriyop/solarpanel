@@ -145,15 +145,26 @@ body {
   pointer-events: none;
 }
 
-/* Header */
-.hud-header {
-  top: max(20px, env(safe-area-inset-top));
+/* Unified Top Navigation Dock */
+.hud-top-dock {
+  top: max(16px, env(safe-area-inset-top));
   left: max(24px, env(safe-area-inset-left));
   right: max(24px, env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Header inside Dock */
+.hud-header {
+  position: static;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  width: 100%;
 }
 
 .brand-badge {
@@ -224,9 +235,7 @@ body {
 
 /* Layer Selection Pill Bar */
 .layer-pills-bar {
-  top: 86px;
-  left: max(24px, env(safe-area-inset-left));
-  right: max(24px, env(safe-area-inset-right));
+  position: static;
   display: flex;
   gap: 6px;
   flex-wrap: nowrap;
@@ -234,11 +243,19 @@ body {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding-bottom: 4px;
-  max-width: calc(100% - 48px);
+  width: 100%;
   pointer-events: auto;
   scroll-snap-type: x proximity;
   mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+}
+
+.btn-text-short {
+  display: none;
+}
+
+.btn-text-full {
+  display: inline;
 }
 
 .layer-pills-bar::-webkit-scrollbar {
@@ -331,8 +348,27 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+}
+
+.hud-btn-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.hud-cluster-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+.studio-dark .hud-cluster-divider {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .btn-group {
@@ -544,7 +580,7 @@ body {
 /* Sun Angle & Real-Time Power Generation Simulator Widget */
 .sun-simulator-card {
   position: absolute;
-  top: 86px;
+  top: 120px;
   right: max(24px, env(safe-area-inset-right));
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(20px);
@@ -554,7 +590,7 @@ body {
   border-radius: 16px;
   box-shadow: var(--shadow-hud);
   width: 255px;
-  z-index: 10;
+  z-index: 12;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-12px);
@@ -958,6 +994,20 @@ body {
    RESPONSIVE DESIGN (Tablets, Mobile Phones, Landscape, & High-DPI Screens)
    ========================================================================== */
 
+/* Compact Desktop Screens (<= 1450px) */
+@media (max-width: 1450px) {
+  .control-card-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 680px;
+    gap: 6px;
+  }
+
+  .hud-cluster-divider {
+    display: none;
+  }
+}
+
 /* Laptop & Compact Desktop Screens (<= 1200px) */
 @media (max-width: 1200px) {
   .hud-header {
@@ -974,6 +1024,10 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .sun-simulator-card {
+    top: 116px;
   }
 
   .grid-mode-btn {
@@ -1011,10 +1065,11 @@ body {
 
 /* Tablet Screens (<= 992px) */
 @media (max-width: 992px) {
-  .hud-header {
-    top: max(16px, env(safe-area-inset-top));
+  .hud-top-dock {
+    top: max(14px, env(safe-area-inset-top));
     left: max(16px, env(safe-area-inset-left));
     right: max(16px, env(safe-area-inset-right));
+    gap: 8px;
   }
 
   .brand-badge {
@@ -1026,15 +1081,8 @@ body {
     display: none; /* Hide subtitle to preserve clean CAD viewport */
   }
 
-  .layer-pills-bar {
-    top: 76px;
-    left: max(16px, env(safe-area-inset-left));
-    right: max(16px, env(safe-area-inset-right));
-    max-width: calc(100% - 32px);
-  }
-
   .sun-simulator-card {
-    top: 76px;
+    top: 110px;
     right: max(16px, env(safe-area-inset-right));
     width: 240px;
     padding: 12px 14px;
@@ -1076,12 +1124,17 @@ body {
 
 /* Mobile Screens (<= 768px) */
 @media (max-width: 768px) {
+  .hud-top-dock {
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+
   .hud-header {
-    top: max(12px, env(safe-area-inset-top));
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
     flex-wrap: wrap;
     gap: 8px;
+    width: 100%;
   }
 
   .brand-badge {
@@ -1137,12 +1190,9 @@ body {
     display: none;
   }
 
-  /* Layer Pills: Compact Swipable Bar */
+  /* Layer Pills: Compact Swipable Bar in natural flow */
   .layer-pills-bar {
-    top: 64px;
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
-    max-width: calc(100% - 24px);
+    width: 100%;
     gap: 5px;
     padding-bottom: 2px;
   }
@@ -1153,6 +1203,15 @@ body {
     min-height: 32px;
     display: inline-flex;
     align-items: center;
+  }
+
+  /* Responsive Button Text */
+  .btn-text-full {
+    display: none;
+  }
+
+  .btn-text-short {
+    display: inline;
   }
 
   /* Mobile Bottom Control Dock: Thumb-Friendly Inverted Stack */
@@ -1181,13 +1240,15 @@ body {
   .control-card-anim .btn-group {
     padding: 2px;
     gap: 2px;
+    flex-shrink: 0;
   }
 
   .control-card-anim .hud-btn {
-    padding: 6px 8px;
-    font-size: 10.5px;
+    padding: 6px 10px;
+    font-size: 11px;
     min-height: 36px;
     gap: 4px;
+    white-space: nowrap;
   }
 
   .control-card-anim .hud-btn svg {
@@ -1197,7 +1258,7 @@ body {
 
   .control-card-anim .slider-group {
     flex: 1;
-    min-width: 0;
+    min-width: 80px;
     gap: 6px;
   }
 

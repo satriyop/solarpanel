@@ -17,43 +17,61 @@
       <!-- 3D Projected Screen Annotations -->
       <div id="labels-container"></div>
 
-      <!-- Top Engineering Header HUD -->
-      <div class="hud-layer hud-header">
-        <div class="brand-badge">
-          <svg class="solar-icon" viewBox="0 0 24 24">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-          </svg>
-          <div class="brand-text">
-            <h1>SolarPanel Component Breakdown</h1>
-            <p>Photorealistic 3D Isometric Exploded View • 415Wp Tier-1 Monocrystalline (1722×1134×35mm)</p>
+      <!-- Top Engineering Navigation Dock (Unified Flow Container) -->
+      <div class="hud-layer hud-top-dock">
+        <!-- Top Engineering Header HUD -->
+        <div class="hud-header">
+          <div class="brand-badge">
+            <svg class="solar-icon" viewBox="0 0 24 24">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            </svg>
+            <div class="brand-text">
+              <h1>SolarPanel Component Breakdown</h1>
+              <p>Photorealistic 3D Isometric Exploded View • 415Wp Tier-1 Monocrystalline (1722×1134×35mm)</p>
+            </div>
+          </div>
+
+          <!-- Grid Operational Topology Switcher Dock (EE Principles) -->
+          <div class="grid-mode-selector">
+            <button id="btn-mode-ongrid" class="grid-mode-btn active" title="Mode ON-GRID PLN: Sinkronisasi 50Hz, Meteran AMI (Permen ESDM 2/2024), Zero-Export DDSU666 aktif">
+              <span class="mode-led ongrid-led"></span>
+              <span class="mode-label-grp">
+                <span class="mode-title">ON-GRID (PLN)</span>
+                <span class="mode-sub">Zero-Export • Self-Consumption</span>
+              </span>
+            </button>
+            <button id="btn-mode-offgrid" class="grid-mode-btn" title="Mode OFF-GRID / EPS: PLN Blackout (0V), BESS 10.5kWh Wajib (V-f Microgrid), ATS Isolasi Fisik <10ms">
+              <span class="mode-led offgrid-led"></span>
+              <span class="mode-label-grp">
+                <span class="mode-title">OFF-GRID (EPS)</span>
+                <span class="mode-sub">BESS Islanded • Beban Esensial</span>
+              </span>
+            </button>
+          </div>
+
+          <div class="spec-badge">
+            <span class="dot"></span>
+            <span id="badge-grid-mode">ON-GRID PLN</span>
+            <span style="opacity: 0.4;">|</span>
+            <span>415Wp TIER-1 MONO</span>
+            <span style="opacity: 0.4;">|</span>
+            <span>220V 50Hz</span>
           </div>
         </div>
 
-        <!-- Grid Operational Topology Switcher Dock (EE Principles) -->
-        <div class="grid-mode-selector">
-          <button id="btn-mode-ongrid" class="grid-mode-btn active" title="Mode ON-GRID PLN: Sinkronisasi 50Hz, Meteran AMI (Permen ESDM 2/2024), Zero-Export DDSU666 aktif">
-            <span class="mode-led ongrid-led"></span>
-            <span class="mode-label-grp">
-              <span class="mode-title">ON-GRID (PLN)</span>
-              <span class="mode-sub">Zero-Export • Self-Consumption</span>
-            </span>
-          </button>
-          <button id="btn-mode-offgrid" class="grid-mode-btn" title="Mode OFF-GRID / EPS: PLN Blackout (0V), BESS 10.5kWh Wajib (V-f Microgrid), ATS Isolasi Fisik <10ms">
-            <span class="mode-led offgrid-led"></span>
-            <span class="mode-label-grp">
-              <span class="mode-title">OFF-GRID (EPS)</span>
-              <span class="mode-sub">BESS Islanded • Beban Esensial</span>
-            </span>
-          </button>
-        </div>
-
-        <div class="spec-badge">
-          <span class="dot"></span>
-          <span id="badge-grid-mode">ON-GRID PLN</span>
-          <span style="opacity: 0.4;">|</span>
-          <span>415Wp TIER-1 MONO</span>
-          <span style="opacity: 0.4;">|</span>
-          <span>220V 50Hz</span>
+        <!-- Layer Quick-Select Filter Pills -->
+        <div class="layer-pills-bar">
+          <button class="layer-pill active" data-layer="all">All Layers</button>
+          <button class="layer-pill" data-layer="frame">1. Aluminum Frame</button>
+          <button class="layer-pill" data-layer="glass">2. Tempered Glass</button>
+          <button class="layer-pill" data-layer="topEva">3. Top EVA</button>
+          <button class="layer-pill" data-layer="cells">4. Silicon Cells (415Wp)</button>
+          <button class="layer-pill" data-layer="bottomEva">5. Bottom EVA</button>
+          <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
+          <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
+          <button id="pill-inverter" class="layer-pill" data-layer="inverter">8. Microinverter (220V)</button>
+          <button id="pill-pln" class="layer-pill system-pill" data-layer="plnDistribution" style="display: none;">⚡ PLN & Proteksi (AMI + ATS)</button>
+          <button id="pill-battery" class="layer-pill system-pill" data-layer="batteryStorage" style="display: none;">🔋 Home Battery (10.5kWh LFP)</button>
         </div>
       </div>
 
@@ -111,21 +129,6 @@
         </div>
       </div>
 
-      <!-- Layer Quick-Select Filter Pills -->
-      <div class="hud-layer layer-pills-bar">
-        <button class="layer-pill active" data-layer="all">All Layers</button>
-        <button class="layer-pill" data-layer="frame">1. Aluminum Frame</button>
-        <button class="layer-pill" data-layer="glass">2. Tempered Glass</button>
-        <button class="layer-pill" data-layer="topEva">3. Top EVA</button>
-        <button class="layer-pill" data-layer="cells">4. Silicon Cells (415Wp)</button>
-        <button class="layer-pill" data-layer="bottomEva">5. Bottom EVA</button>
-        <button class="layer-pill" data-layer="backsheet">6. Tedlar Backsheet</button>
-        <button class="layer-pill" data-layer="jbox">7. Junction Box</button>
-        <button id="pill-inverter" class="layer-pill" data-layer="inverter">8. Microinverter (220V)</button>
-        <button id="pill-pln" class="layer-pill system-pill" data-layer="plnDistribution" style="display: none;">⚡ PLN & Proteksi (AMI + ATS)</button>
-        <button id="pill-battery" class="layer-pill system-pill" data-layer="batteryStorage" style="display: none;">🔋 Home Battery (10.5kWh LFP)</button>
-      </div>
-
       <!-- Bottom Control Dock -->
       <div class="hud-layer hud-footer">
         <!-- Animation & State Controls -->
@@ -135,13 +138,15 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="4" y="4" width="16" height="16" rx="2"/>
               </svg>
-              Start: Assembled
+              <span class="btn-text-full">Start: Assembled</span>
+              <span class="btn-text-short">Assembled</span>
             </button>
             <button id="btn-end-frame" class="hud-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 4h16v2H4zm0 7h16v2H4zm0 7h16v2H4z"/>
               </svg>
-              End: Exploded
+              <span class="btn-text-full">End: Exploded</span>
+              <span class="btn-text-short">Exploded</span>
             </button>
           </div>
 
@@ -159,80 +164,93 @@
           </button>
         </div>
 
-        <!-- Camera, Studio & Visual Controls -->
+        <!-- Camera, Studio, Topology & Simulation Controls -->
         <div class="control-card control-card-tools">
-          <button id="btn-orbit-pan" class="hud-toggle-btn active">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            360° Orbit Pan
-          </button>
+          <!-- Cluster 1: System Hardware & Topology -->
+          <div class="hud-btn-cluster hud-cluster-topology" title="System Topology & Equipment">
+            <button id="btn-toggle-inverter-mode" class="hud-toggle-btn" title="Switch between Rooftop Microinverter (MLPE) and Wall-Mounted Central String Inverter">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <line x1="7" y1="8" x2="17" y2="8"></line>
+                <line x1="7" y1="12" x2="17" y2="12"></line>
+                <circle cx="8" cy="16" r="1.5" fill="currentColor"></circle>
+                <circle cx="16" cy="16" r="1.5" fill="currentColor"></circle>
+              </svg>
+              <span id="label-inverter-mode">Inverter: Micro (220V)</span>
+            </button>
 
-          <button id="btn-toggle-labels" class="hud-toggle-btn active">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            Labels
-          </button>
+            <button id="btn-toggle-pln" class="hud-toggle-btn" title="Toggle Panel Distribusi PLN (Smart Meter AMI, Zero-Export DDSU666, ATS, Proteksi SPD Type 2)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+              </svg>
+              PLN & ATS Board
+            </button>
 
-          <button id="btn-toggle-sun" class="hud-toggle-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M12 2v2"></path>
-              <path d="M12 20v2"></path>
-              <path d="m4.93 4.93 1.41 1.41"></path>
-              <path d="m17.66 17.66 1.41 1.41"></path>
-              <path d="M2 12h2"></path>
-              <path d="M20 12h2"></path>
-              <path d="m6.34 17.66-1.41 1.41"></path>
-              <path d="m19.07 4.93-1.41 1.41"></path>
-            </svg>
-            Solar Irradiance
-          </button>
+            <button id="btn-toggle-battery" class="hud-toggle-btn" title="Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="16" height="10" rx="2"></rect>
+                <line x1="20" y1="11" x2="20" y2="13"></line>
+                <line x1="6" y1="10" x2="6" y2="14"></line>
+                <line x1="10" y1="10" x2="10" y2="14"></line>
+              </svg>
+              Home Battery
+            </button>
+          </div>
 
-          <button id="btn-toggle-power" class="hud-toggle-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-            Power Flow
-          </button>
+          <div class="hud-cluster-divider" aria-hidden="true"></div>
 
-          <button id="btn-toggle-inverter-mode" class="hud-toggle-btn" title="Switch between Rooftop Microinverter (MLPE) and Wall-Mounted Central String Inverter">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-              <line x1="7" y1="8" x2="17" y2="8"></line>
-              <line x1="7" y1="12" x2="17" y2="12"></line>
-              <circle cx="8" cy="16" r="1.5" fill="currentColor"></circle>
-              <circle cx="16" cy="16" r="1.5" fill="currentColor"></circle>
-            </svg>
-            <span id="label-inverter-mode">Inverter: Micro (220V)</span>
-          </button>
+          <!-- Cluster 2: Viewport & Inspection -->
+          <div class="hud-btn-cluster hud-cluster-viewport" title="Viewport & Inspection Controls">
+            <button id="btn-orbit-pan" class="hud-toggle-btn active" title="360° Continuous Orbit Camera Pan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              360° Orbit Pan
+            </button>
 
-          <button id="btn-toggle-pln" class="hud-toggle-btn" title="Toggle Panel Distribusi PLN (Smart Meter AMI, Zero-Export DDSU666, ATS, Proteksi SPD Type 2)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-            </svg>
-            PLN & ATS Board
-          </button>
+            <button id="btn-toggle-labels" class="hud-toggle-btn active" title="Toggle 3D Component Annotations">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Labels
+            </button>
 
-          <button id="btn-toggle-battery" class="hud-toggle-btn" title="Toggle Home Battery Energy Storage System (10.5kWh LiFePO4 BESS)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="16" height="10" rx="2"></rect>
-              <line x1="20" y1="11" x2="20" y2="13"></line>
-              <line x1="6" y1="10" x2="6" y2="14"></line>
-              <line x1="10" y1="10" x2="10" y2="14"></line>
-            </svg>
-            Home Battery
-          </button>
+            <button id="btn-toggle-view" class="hud-toggle-btn" title="Toggle Underside Inspection Camera Angle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              Underside View
+            </button>
+          </div>
 
-          <button id="btn-toggle-view" class="hud-toggle-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Underside View
-          </button>
+          <div class="hud-cluster-divider" aria-hidden="true"></div>
+
+          <!-- Cluster 3: Simulation & Analysis -->
+          <div class="hud-btn-cluster hud-cluster-simulation" title="Physics & Simulation Controls">
+            <button id="btn-toggle-sun" class="hud-toggle-btn" title="Toggle Solar Irradiance Simulator">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="m17.66 17.66 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="m6.34 17.66-1.41 1.41"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+              </svg>
+              Solar Irradiance
+            </button>
+
+            <button id="btn-toggle-power" class="hud-toggle-btn" title="Toggle Real-Time Power Flow Visualizer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Power Flow
+            </button>
+          </div>
         </div>
       </div>
     </div>
