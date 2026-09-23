@@ -342,6 +342,9 @@ body {
 
 .control-card-anim {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
 }
 
 .control-card-tools {
@@ -519,6 +522,23 @@ body {
 
 .studio-dark .hud-btn {
   color: #a4b0c2;
+}
+
+.studio-dark .hud-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #c9d1dd;
+}
+
+.studio-dark .hud-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.studio-dark .hud-toggle-btn.active {
+  background: #0066cc;
+  color: #ffffff;
+  border-color: #0066cc;
 }
 
 .studio-dark .ratio-indicator {
@@ -1343,8 +1363,8 @@ body {
   }
 
   .control-card-anim {
-    justify-content: space-between;
-    width: 100%;
+    justify-content: flex-start;
+    width: auto;
   }
 
   .control-card-tools {
@@ -1474,65 +1494,20 @@ body {
     width: 100%;
   }
 
-  /* Primary animation controls row */
+  /* Primary animation breakdown toggle row */
   .control-card-anim {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-  }
-
-  .control-card-anim .btn-group {
-    padding: 2px;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  .control-card-anim .hud-btn {
-    padding: 6px 10px;
-    font-size: 11px;
-    min-height: 36px;
-    gap: 4px;
-    white-space: nowrap;
-  }
-
-  .control-card-anim .hud-btn svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  .control-card-anim .slider-group {
-    flex: 1;
-    min-width: 80px;
-    gap: 6px;
-  }
-
-  .control-card-anim .slider-label {
-    display: none; /* Saves horizontal space on mobile */
-  }
-
-  .control-card-anim .hud-slider {
-    flex: 1;
     width: 100%;
-    min-width: 50px;
-    height: 6px;
+    padding: 6px 8px;
   }
 
-  .hud-slider::-webkit-slider-thumb {
-    width: 22px;
-    height: 22px;
-  }
-
-  .control-card-anim #label-explode-val {
-    font-size: 10px;
-    width: 26px;
-  }
-
-  .control-card-anim #btn-auto-cycle {
-    padding: 6px 10px;
-    font-size: 10.5px;
-    min-height: 36px;
-    flex-shrink: 0;
+  .control-card-anim #btn-toggle-breakdown {
+    width: 100%;
+    justify-content: center;
+    min-height: 38px;
+    font-size: 12px;
+    font-weight: 700;
   }
 
   /* Secondary tools bar: Horizontally swipeable */
@@ -1680,14 +1655,10 @@ body {
     font-size: 9px;
   }
 
-  .control-card-anim .hud-btn {
-    padding: 5px 6px;
-    font-size: 9.5px;
-  }
-
-  .control-card-anim #btn-auto-cycle {
+  .control-card-anim #btn-toggle-breakdown {
     padding: 5px 8px;
-    font-size: 9.5px;
+    font-size: 11px;
+    min-height: 34px;
   }
 }
 
@@ -1753,16 +1724,13 @@ body {
 
   .control-card-anim {
     flex-shrink: 0;
+    padding: 4px 6px;
   }
 
-  .control-card-anim .hud-btn {
-    padding: 4px 7px;
-    font-size: 9.5px;
+  .control-card-anim #btn-toggle-breakdown {
+    padding: 4px 8px;
+    font-size: 10px;
     min-height: 28px;
-  }
-
-  .control-card-anim .hud-slider {
-    width: 80px;
   }
 
   .control-card-tools {

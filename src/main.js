@@ -46,11 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnModeOngrid = document.getElementById('btn-mode-ongrid');
   const btnModeOffgrid = document.getElementById('btn-mode-offgrid');
   const badgeGridMode = document.getElementById('badge-grid-mode');
-  const btnStartFrame = document.getElementById('btn-start-frame');
-  const btnEndFrame = document.getElementById('btn-end-frame');
-  const sliderExplode = document.getElementById('slider-explode');
-  const labelExplodeVal = document.getElementById('label-explode-val');
-  const btnAutoCycle = document.getElementById('btn-auto-cycle');
+  const btnToggleBreakdown = document.getElementById('btn-toggle-breakdown');
   const btnOrbitPan = document.getElementById('btn-orbit-pan');
   const btnToggleLabels = document.getElementById('btn-toggle-labels');
   const btnToggleSun = document.getElementById('btn-toggle-sun');
@@ -119,8 +115,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Connect 3D MCB lever click from 3D scene directly to toggleCircuit
   anim.onCircuitToggle = (index) => toggleCircuit(index);
 
-  let isAutoCycleRunning = true;
-  let autoCycleTimer = null;
   let isSunSimulatorActive = false;
   let isPowerFlowActive = false;
   let isBatteryActive = false;
@@ -263,10 +257,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Update UI & Sun Landing Height when separation progress changes
   anim.onProgressUpdate = (val) => {
-    const pct = Math.round(val * 100);
-    sliderExplode.value = pct;
-    labelExplodeVal.textContent = `${pct}%`;
-
     // Dynamically track the landing height of sunlight when layers explode
     const glassLayer = solarPanel.layers.find(l => l.id === 'glass');
     if (glassLayer) {
@@ -274,73 +264,17 @@ window.addEventListener('DOMContentLoaded', () => {
       studio.setSunAngle(currentSunAngle);
     }
 
-    if (pct < 10) {
-      btnStartFrame.classList.add('active');
-      btnEndFrame.classList.remove('active');
-    } else if (pct > 90) {
-      btnStartFrame.classList.remove('active');
-      btnEndFrame.classList.add('active');
-    } else {
-      btnStartFrame.classList.remove('active');
-      btnEndFrame.classList.remove('active');
+    if (btnToggleBreakdown) {
+      btnToggleBreakdown.classList.toggle('active', val > 0.5);
     }
   };
 
-  // Separation Slider
-  sliderExplode.addEventListener('input', (e) => {
-    stopAutoCycle();
-    const val = parseFloat(e.target.value) / 100;
-    anim.setProgress(val);
-    labelExplodeVal.textContent = `${e.target.value}%`;
-
-    // Dynamically track sunlight landing height
-    const glassLayer = solarPanel.layers.find(l => l.id === 'glass');
-    if (glassLayer) {
-      studio.updateSunTargetY(glassLayer.currentY);
-      studio.setSunAngle(currentSunAngle);
-    }
-
-    if (val < 0.1) {
-      btnStartFrame.classList.add('active');
-      btnEndFrame.classList.remove('active');
-    } else if (val > 0.9) {
-      btnStartFrame.classList.remove('active');
-      btnEndFrame.classList.add('active');
-    } else {
-      btnStartFrame.classList.remove('active');
-      btnEndFrame.classList.remove('active');
-    }
-  });
-
-  // Auto Cycle Animation (Loop between Assembled & Exploded)
-  function stopAutoCycle() {
-    if (isAutoCycleRunning) {
-      isAutoCycleRunning = false;
-      btnAutoCycle.classList.remove('active');
-      if (autoCycleTimer) clearTimeout(autoCycleTimer);
-    }
+  // Toggle Layer Breakdown (Assembled 0.0 <-> Exploded 1.0)
+  if (btnToggleBreakdown) {
+    btnToggleBreakdown.addEventListener('click', () => {
+      anim.toggleExplode();
+    });
   }
-
-  function runCycleStep() {
-    if (!isAutoCycleRunning) return;
-    const target = anim.explodeProgress > 0.5 ? 0.0 : 1.0;
-    anim.animateTo(target, 2.5, 'power2.inOut');
-
-    // Wait for animation + hold time (4.5s total)
-    autoCycleTimer = setTimeout(() => {
-      runCycleStep();
-    }, 4500);
-  }
-
-  btnAutoCycle.addEventListener('click', () => {
-    isAutoCycleRunning = !isAutoCycleRunning;
-    btnAutoCycle.classList.toggle('active', isAutoCycleRunning);
-    if (isAutoCycleRunning) {
-      runCycleStep();
-    } else {
-      stopAutoCycle();
-    }
-  });
 
   // Orbit Pan Toggle
   btnOrbitPan.addEventListener('click', () => {
@@ -670,17 +604,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Start Frame: Fully Assembled
-  btnStartFrame.addEventListener('click', () => {
-    stopAutoCycle();
-    anim.animateTo(0.0, 2.0);
-  });
-
-  // End Frame: Exploded Diagram
-  btnEndFrame.addEventListener('click', () => {
-    stopAutoCycle();
-    anim.animateTo(1.0, 2.0);
-  });
 
   // Sun Angle & Real-Time Power Generation Simulator
   const sliderSunAngle = document.getElementById('slider-sun-angle');
@@ -709,11 +632,6 @@ window.addEventListener('DOMContentLoaded', () => {
   setInverterArchitecture('micro');
   setGridMode('ongrid');
 
-  // Kick off Auto Cycle animation after a brief 1.2s initial view of the assembled panel
-  autoCycleTimer = setTimeout(() => {
-    runCycleStep();
-  }, 1200);
-
   // Interactive 3D Hover Tooltip Card
   const hoverTooltip = document.getElementById('hover-tooltip');
   if (hoverTooltip) {
@@ -723,7 +641,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Layer Filter Pills with Cinematic Macro Camera Fly-In
   layerPills.forEach((pill) => {
     pill.addEventListener('click', () => {
-      stopAutoCycle();
       layerPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const layerId = pill.dataset.layer;

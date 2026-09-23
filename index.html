@@ -196,34 +196,13 @@
       <div class="hud-layer hud-footer">
         <!-- Animation & State Controls -->
         <div class="control-card control-card-anim">
-          <div class="btn-group">
-            <button id="btn-start-frame" class="hud-btn active">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="4" y="4" width="16" height="16" rx="2"/>
-              </svg>
-              <span class="btn-text-full">Start: Assembled</span>
-              <span class="btn-text-short">Assembled</span>
-            </button>
-            <button id="btn-end-frame" class="hud-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M4 4h16v2H4zm0 7h16v2H4zm0 7h16v2H4z"/>
-              </svg>
-              <span class="btn-text-full">End: Exploded</span>
-              <span class="btn-text-short">Exploded</span>
-            </button>
-          </div>
-
-          <div class="slider-group">
-            <span class="slider-label">Separation</span>
-            <input type="range" id="slider-explode" class="hud-slider" min="0" max="100" value="0" />
-            <span id="label-explode-val" style="font-size: 11px; font-family: monospace; width: 32px;">0%</span>
-          </div>
-
-          <button id="btn-auto-cycle" class="hud-toggle-btn active">
+          <button id="btn-toggle-breakdown" class="hud-toggle-btn" title="Toggle antara Panel Terpasang Utuh dan Tampilan Terurai (Exploded Breakdown)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
             </svg>
-            Auto Cycle
+            <span>Layer Breakdown</span>
           </button>
         </div>
 
