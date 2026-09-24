@@ -513,7 +513,7 @@ window.addEventListener('DOMContentLoaded', () => {
       btnToggleInverterMode.classList.toggle('active', isCentral);
     }
     if (labelInverterMode) {
-      labelInverterMode.textContent = isCentral ? 'Inverter: Central Hybrid (5kW 220V)' : 'Inverter: Micro (220V PLN)';
+      labelInverterMode.textContent = isCentral ? 'Inverter: Central' : 'Inverter: Micro';
     }
 
     // 8. Update Sun Card Inverter label
@@ -625,7 +625,7 @@ window.addEventListener('DOMContentLoaded', () => {
       btnToggleView.classList.toggle('active', isUndersideView);
       btnToggleView.innerHTML = isUndersideView
         ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Front View`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Underside View`;
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Underside`;
       anim.setCameraView(isUndersideView ? 'underside' : 'front');
     });
   }
