@@ -236,13 +236,30 @@ export class PowerFlowController {
       const sprite = new THREE.Sprite(this.acMat.clone());
       sprite.material.color.setHex(0x06b6d4); // Cyan AC power
       sprite.scale.set(0.046, 0.046, 1);
-      sprite.visible = (this.isVisible && plnDistribution.isVisible);
+      sprite.visible = (this.isVisible && plnDistribution.isVisible && this.inverterMode === 'central');
       plnDistribution.group.add(sprite);
       this.inverterToPlnParticles.push({
         sprite,
         t: i / 10,
         speed: 0.35
       });
+    }
+
+    // 3b. Microinverter Rooftop AC Drop Conduit Particles (Roof Transition Box to AC Combiner)
+    this.microAcToCombinerParticles = [];
+    if (plnDistribution.microAcConduitCurve) {
+      for (let i = 0; i < 12; i++) {
+        const sprite = new THREE.Sprite(this.acMat.clone());
+        sprite.material.color.setHex(0x06b6d4); // Cyan AC power
+        sprite.scale.set(0.046, 0.046, 1);
+        sprite.visible = (this.isVisible && plnDistribution.isVisible && this.inverterMode !== 'central');
+        plnDistribution.group.add(sprite);
+        this.microAcToCombinerParticles.push({
+          sprite,
+          t: i / 12,
+          speed: 0.36
+        });
+      }
     }
 
     // 4. Combined AC Feeder into Consumer Main Distribution Panel
@@ -328,6 +345,15 @@ export class PowerFlowController {
     if (this.centralAcParticles) {
       this.centralAcParticles.forEach(p => p.sprite.visible = (this.isVisible && isCentral));
     }
+    if (this.microAcToCombinerParticles) {
+      this.microAcToCombinerParticles.forEach(p => p.sprite.visible = (this.isVisible && this.plnDistribution && this.plnDistribution.isVisible && !isCentral));
+    }
+    if (this.inverterToPlnParticles) {
+      this.inverterToPlnParticles.forEach(p => p.sprite.visible = (this.isVisible && this.plnDistribution && this.plnDistribution.isVisible && isCentral));
+    }
+    if (this.rs485Particles) {
+      this.rs485Particles.forEach(p => p.sprite.visible = (this.isVisible && this.plnDistribution && this.plnDistribution.isVisible && isCentral && this.gridTopology !== 'offgrid'));
+    }
   }
 
   /**
@@ -358,6 +384,9 @@ export class PowerFlowController {
     if (this.centralAcParticles) {
       this.centralAcParticles.forEach(p => p.sprite.visible = (visible && isCentral));
     }
+    if (this.microAcToCombinerParticles) {
+      this.microAcToCombinerParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && !isCentral));
+    }
     if (this.batteryChargeParticles && this.batteryStorage) {
       this.batteryChargeParticles.forEach(p => p.sprite.visible = (visible && this.batteryStorage.isVisible));
     }
@@ -365,10 +394,10 @@ export class PowerFlowController {
       this.plnGridParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && this.gridTopology !== 'offgrid'));
     }
     if (this.rs485Particles) {
-      this.rs485Particles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && this.gridTopology !== 'offgrid'));
+      this.rs485Particles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && isCentral && this.gridTopology !== 'offgrid'));
     }
     if (this.inverterToPlnParticles) {
-      this.inverterToPlnParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible));
+      this.inverterToPlnParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && isCentral));
     }
     if (this.essentialLoadsParticles) {
       this.essentialLoadsParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible));
@@ -530,111 +559,125 @@ export class PowerFlowController {
       } else if (this.batteryChargeParticles) {
         this.batteryChargeParticles.forEach(p => p.sprite.visible = false);
       }
+    }
 
-      // F. Animate PLN Grid Distribution Board & Household Consumer Load Unit
-      if (this.plnDistribution && this.plnDistribution.isVisible) {
-        const isOffGrid = (this.gridTopology === 'offgrid');
-        const homeWatts = Math.max(0, (this.activeLoads[0] ? 600 : 0) + (this.activeLoads[1] ? 150 : 0) + (this.activeLoads[2] ? 150 : 0));
-        const solarEffectiveWatts = Math.min(currentWatts, Math.max(1, homeWatts));
-        const plnEffectiveWatts = isOffGrid ? 0 : Math.max(0, homeWatts - solarEffectiveWatts);
+    // 4. Animate PLN Grid Distribution Board & Household Consumer Load Unit
+    // (Universal across both Microinverter and Central Inverter architectures)
+    if (this.plnDistribution && this.plnDistribution.isVisible) {
+      const isOffGrid = (this.gridTopology === 'offgrid');
+      const homeWatts = Math.max(0, (this.activeLoads[0] ? 600 : 0) + (this.activeLoads[1] ? 150 : 0) + (this.activeLoads[2] ? 150 : 0));
+      const solarEffectiveWatts = Math.min(currentWatts, Math.max(1, homeWatts));
+      const plnEffectiveWatts = isOffGrid ? 0 : Math.max(0, homeWatts - solarEffectiveWatts);
 
-        // Normalized power contribution ratios (Kirchhoff: P_load = P_solar + P_pln)
-        const plnRatio = (isOffGrid || homeWatts === 0) ? 0.0 : (plnEffectiveWatts / homeWatts);
-        const solarRatio = homeWatts === 0 ? 0.0 : (solarEffectiveWatts / homeWatts);
+      // Normalized power contribution ratios (Kirchhoff: P_load = P_solar + P_pln)
+      const plnRatio = (isOffGrid || homeWatts === 0) ? 0.0 : (plnEffectiveWatts / homeWatts);
+      const solarRatio = homeWatts === 0 ? 0.0 : (solarEffectiveWatts / homeWatts);
 
-        // 1. PLN Utility Feeder Line Particles (Aerial Drop -> Meter -> DDSU666)
-        if (this.plnGridParticles) {
-          const pt = new THREE.Vector3();
-          this.plnGridParticles.forEach((p) => {
-            if (isOffGrid || plnRatio <= 0.01) {
-              p.sprite.visible = false;
-            } else {
-              p.sprite.visible = this.isVisible;
-              p.t = (p.t + p.speed * (0.35 + 0.65 * plnRatio) * delta) % 1.0;
-              if (this.plnDistribution.plnAerialCurve && p.t < 0.45) {
-                // First half: aerial drop cable into weatherhead
-                this.plnDistribution.plnAerialCurve.getPoint(p.t / 0.45, pt);
-                p.sprite.position.copy(pt);
-              } else {
-                // Second half: through meter down into DDSU666
-                const subT = (p.t - 0.45) / 0.55;
-                p.sprite.position.set(-0.16, 0.74 - subT * 0.68, 0.01);
-              }
-              p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * (0.35 + 0.65 * plnRatio);
-            }
-          });
-        }
-
-        // 2. RS485 Modbus Telemetry Data Pulses (DDSU666 to Central Inverter)
-        if (this.rs485Particles && this.plnDistribution.rs485ConduitCurve) {
-          const pt = new THREE.Vector3();
-          this.rs485Particles.forEach((p) => {
-            if (isOffGrid) {
-              p.sprite.visible = false;
-            } else {
-              p.sprite.visible = this.isVisible;
-              p.t = (p.t + p.speed * delta) % 1.0;
-              this.plnDistribution.rs485ConduitCurve.getPoint(p.t, pt);
+      // 1. PLN Utility Feeder Line Particles (Aerial Drop -> Meter -> DDSU666)
+      if (this.plnGridParticles) {
+        const pt = new THREE.Vector3();
+        this.plnGridParticles.forEach((p) => {
+          if (isOffGrid || plnRatio <= 0.01) {
+            p.sprite.visible = false;
+          } else {
+            p.sprite.visible = this.isVisible;
+            p.t = (p.t + p.speed * (0.35 + 0.65 * plnRatio) * delta) % 1.0;
+            if (this.plnDistribution.plnAerialCurve && p.t < 0.45) {
+              // First half: aerial drop cable into weatherhead
+              this.plnDistribution.plnAerialCurve.getPoint(p.t / 0.45, pt);
               p.sprite.position.copy(pt);
-              p.sprite.material.opacity = 0.7 + 0.3 * Math.sin(this.time * 25.0 + p.t * 10.0);
+            } else {
+              // Second half: through meter down into DDSU666
+              const subT = (p.t - 0.45) / 0.55;
+              p.sprite.position.set(-0.16, 0.74 - subT * 0.68, 0.01);
             }
-          });
-        }
+            p.sprite.material.opacity = (0.55 + 0.45 * Math.sin(p.t * Math.PI)) * (0.35 + 0.65 * plnRatio);
+          }
+        });
+      }
 
-        // 3. Central Inverter AC Power flow to ATS & Combiner
-        if (this.inverterToPlnParticles && this.plnDistribution.invAcConduitCurve) {
-          const pt = new THREE.Vector3();
-          this.inverterToPlnParticles.forEach((p) => {
-            p.t = (p.t + p.speed * (powerFactor > 0.05 ? powerFactor : 0.3) * delta) % 1.0;
-            this.plnDistribution.invAcConduitCurve.getPoint(1.0 - p.t, pt);
+      // 2. Microinverter AC Power Flow (Roof Transition Box down EMT to AC Combiner)
+      if (this.inverterMode !== 'central' && this.microAcToCombinerParticles && this.plnDistribution.microAcConduitCurve) {
+        const pt = new THREE.Vector3();
+        this.microAcToCombinerParticles.forEach((p) => {
+          p.t = (p.t + p.speed * (powerFactor > 0.05 ? powerFactor : 0.3) * delta) % 1.0;
+          this.plnDistribution.microAcConduitCurve.getPoint(p.t, pt);
+          p.sprite.position.copy(pt);
+          p.sprite.visible = this.isVisible;
+          p.sprite.material.color.setHex(0x06b6d4); // Clean cyan AC power
+          p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * (powerFactor > 0.05 ? powerFactor : 0.4);
+        });
+      }
+
+      // 3. Central Inverter AC Power flow to ATS & Combiner
+      if (this.inverterMode === 'central' && this.inverterToPlnParticles && this.plnDistribution.invAcConduitCurve) {
+        const pt = new THREE.Vector3();
+        this.inverterToPlnParticles.forEach((p) => {
+          p.t = (p.t + p.speed * (powerFactor > 0.05 ? powerFactor : 0.3) * delta) % 1.0;
+          this.plnDistribution.invAcConduitCurve.getPoint(1.0 - p.t, pt);
+          p.sprite.position.copy(pt);
+          p.sprite.visible = this.isVisible;
+
+          if (isOffGrid) {
+            p.sprite.material.color.setHex(0xf59e0b); // EPS Islanded Backup
+          } else {
+            p.sprite.material.color.setHex(0x06b6d4); // AC Self-Consumption
+          }
+          p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * (powerFactor > 0.05 ? powerFactor : 0.4);
+        });
+      }
+
+      // 4. RS485 Modbus Telemetry Data Pulses (DDSU666 to Central Inverter)
+      if (this.inverterMode === 'central' && this.rs485Particles && this.plnDistribution.rs485ConduitCurve) {
+        const pt = new THREE.Vector3();
+        this.rs485Particles.forEach((p) => {
+          if (isOffGrid) {
+            p.sprite.visible = false;
+          } else {
+            p.sprite.visible = this.isVisible;
+            p.t = (p.t + p.speed * delta) % 1.0;
+            this.plnDistribution.rs485ConduitCurve.getPoint(p.t, pt);
             p.sprite.position.copy(pt);
-            p.sprite.visible = this.isVisible;
+            p.sprite.material.opacity = 0.7 + 0.3 * Math.sin(this.time * 25.0 + p.t * 10.0);
+          }
+        });
+      }
 
-            if (isOffGrid) {
-              p.sprite.material.color.setHex(0xf59e0b); // EPS Islanded Backup
-            } else {
-              p.sprite.material.color.setHex(0x06b6d4); // AC Self-Consumption
-            }
-            p.sprite.material.opacity = (0.6 + 0.4 * Math.sin(p.t * Math.PI)) * (powerFactor > 0.05 ? powerFactor : 0.4);
-          });
-        }
+      // 5. Combined AC Feeder (Entering Consumer Main Distribution Panel)
+      if (this.essentialLoadsParticles) {
+        this.essentialLoadsParticles.forEach((p) => {
+          p.t = (p.t + p.speed * (0.3 + 0.7 * powerFactor) * delta) % 1.0;
+          p.sprite.position.set(0.16, -0.28 - p.t * 0.11, 0.01);
+          p.sprite.visible = this.isVisible;
+          if (isOffGrid) {
+            p.sprite.material.color.setHex(0xf59e0b); // EPS backup
+          } else {
+            p.sprite.material.color.setHex(solarRatio > 0.6 ? 0x06b6d4 : 0x10b981);
+          }
+          p.sprite.material.opacity = homeWatts === 0 ? 0.0 : (0.75 + 0.25 * Math.sin(p.t * Math.PI));
+        });
+      }
 
-        // 4. Combined AC Feeder (Entering Consumer Main Distribution Panel)
-        if (this.essentialLoadsParticles) {
-          this.essentialLoadsParticles.forEach((p) => {
-            p.t = (p.t + p.speed * (0.3 + 0.7 * powerFactor) * delta) % 1.0;
-            p.sprite.position.set(0.16, -0.28 - p.t * 0.11, 0.01);
-            p.sprite.visible = this.isVisible;
-            if (isOffGrid) {
-              p.sprite.material.color.setHex(0xf59e0b); // EPS backup
-            } else {
-              p.sprite.material.color.setHex(solarRatio > 0.6 ? 0x06b6d4 : 0x10b981);
-            }
-            p.sprite.material.opacity = homeWatts === 0 ? 0.0 : (0.75 + 0.25 * Math.sin(p.t * Math.PI));
-          });
-        }
-
-        // 5. Consumer Branch Circuit Particles (AC 600W, Kulkas 150W, Lampu 150W)
-        if (this.consumerBranchParticles) {
-          const pt = new THREE.Vector3();
-          this.consumerBranchParticles.forEach((p) => {
-            const isCircuitActive = this.activeLoads && this.activeLoads[p.bIdx];
-            if (!isCircuitActive) {
-              p.sprite.visible = false;
-              return;
-            }
-            p.t = (p.t + p.speed * (0.3 + 0.7 * (solarRatio * 0.5 + plnRatio * 0.5)) * delta) % 1.0;
-            p.curve.getPoint(p.t, pt);
-            p.sprite.position.copy(pt);
-            p.sprite.visible = this.isVisible;
-            if (isOffGrid) {
-              p.sprite.material.color.setHex(0xf59e0b); // Battery/EPS Backup
-            } else {
-              p.sprite.material.color.setHex(0x38bdf8); // Combined AC Power (Kirchhoff Sum)
-            }
-            p.sprite.material.opacity = 0.65 + 0.35 * Math.sin(p.t * Math.PI);
-          });
-        }
+      // 6. Consumer Branch Circuit Particles (AC 600W, Kulkas 150W, Lampu 150W)
+      if (this.consumerBranchParticles) {
+        const pt = new THREE.Vector3();
+        this.consumerBranchParticles.forEach((p) => {
+          const isCircuitActive = this.activeLoads && this.activeLoads[p.bIdx];
+          if (!isCircuitActive) {
+            p.sprite.visible = false;
+            return;
+          }
+          p.t = (p.t + p.speed * (0.3 + 0.7 * (solarRatio * 0.5 + plnRatio * 0.5)) * delta) % 1.0;
+          p.curve.getPoint(p.t, pt);
+          p.sprite.position.copy(pt);
+          p.sprite.visible = this.isVisible;
+          if (isOffGrid) {
+            p.sprite.material.color.setHex(0xf59e0b); // Battery/EPS Backup
+          } else {
+            p.sprite.material.color.setHex(0x38bdf8); // Combined AC Power (Kirchhoff Sum)
+          }
+          p.sprite.material.opacity = 0.65 + 0.35 * Math.sin(p.t * Math.PI);
+        });
       }
     }
   }

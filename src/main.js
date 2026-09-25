@@ -497,6 +497,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // 4. Show/hide Wall-Mounted Central Inverter, equipment board, Soladeck box & EMT conduit
     centralInverter.setVisible(isCentral);
 
+    // 4b. Reconfigure PLN Distribution Board conduits (Micro AC drop vs Central ATS/RS485)
+    plnDistribution.setInverterMode(mode);
+
     // 5. Update PLN Distribution Board visibility (Always active in On-Grid mode for utility connection & load)
     if (currentGridMode === 'ongrid' || isCentral) {
       isPlnActive = true;

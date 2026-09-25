@@ -587,37 +587,94 @@ export class PLNGridDistributionModel {
     // 5. Interconnection Conduit: AC Inverter Output from Central Inverter (X=1.95m) into ATS
     // Relative coordinates: Central Inverter AC port is at world (2.09, -0.18, -0.19)
     // In local coords of PLN board (X=1.15, Y=0.20, Z=-0.20):
-    // Start at ATS right port (0.29, 0.24, 0.01) -> run down and right towards Central Inverter (0.80, -0.38, 0.01)
+    // Start at ATS right port (0.29, 0.24, 0.01) -> run down and right towards Central Inverter (0.94, -0.38, 0.01)
     const invAcInterconnectCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.29, 0.24, 0.01),
       new THREE.Vector3(0.36, 0.24, 0.01),
       new THREE.Vector3(0.42, 0.12, 0.01),
       new THREE.Vector3(0.42, -0.36, 0.01),
       new THREE.Vector3(0.55, -0.38, 0.01),
-      new THREE.Vector3(0.80, -0.38, 0.01) // Directly mates to Central Inverter AC drop pipe
+      new THREE.Vector3(0.94, -0.38, 0.01) // Directly mates to Central Inverter AC drop pipe at X=2.09m world (0 gap)
     ]);
     this.invAcConduitCurve = invAcInterconnectCurve;
 
     const invAcConduitGeo = new THREE.TubeGeometry(invAcInterconnectCurve, 36, 0.013, 14, false);
-    const invAcConduitMesh = new THREE.Mesh(invAcConduitGeo, emtMat);
-    invAcConduitMesh.castShadow = true;
-    invAcConduitMesh.userData.isAcCombiner = true;
-    this.conduitGroup.add(invAcConduitMesh);
+    this.invAcConduitMesh = new THREE.Mesh(invAcConduitGeo, emtMat);
+    this.invAcConduitMesh.castShadow = true;
+    this.invAcConduitMesh.userData.isAcCombiner = true;
+    this.conduitGroup.add(this.invAcConduitMesh);
+
+    // 5b. Microinverter Rooftop AC Drop Conduit (Solar Roof Trunk to AC Combiner Box)
+    // Connects rooftop AC trunk at (-0.68, -0.306, 0.384) to AC Combiner Box top gland at (0.185, -0.04, 0.01)
+    this.microAcConduitGroup = new THREE.Group();
+    this.microAcConduitGroup.name = 'MicroAcConduitGroup';
+
+    // Rooftop AC Transition Box (Weatherproof NEMA 4X enclosure mounted near roof eave)
+    const acBoxGeo = new THREE.BoxGeometry(0.10, 0.048, 0.09);
+    const acBoxMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.6 });
+    this.fadeMaterials.push(acBoxMat);
+    const acBox = new THREE.Mesh(acBoxGeo, acBoxMat);
+    acBox.position.set(-0.68, -0.306, 0.384);
+    acBox.rotation.x = 22 * (Math.PI / 180);
+    acBox.userData.isAcCombiner = true;
+    acBox.userData.tooltipTitle = 'Kotak Transisi AC Atap (Rooftop AC Transition Box)';
+    acBox.userData.tooltipDesc = 'Titik transisi kabel rubber AC trunk dari microinverter menuju pipa konduit metalik EMT yang turun ke panel kombinator.';
+    this.microAcConduitGroup.add(acBox);
+
+    // Cable Grip Gland on left (receives Microinverter AC trunk cable)
+    const gripGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.022, 16);
+    const grip = new THREE.Mesh(gripGeo, brassMat);
+    grip.rotation.z = Math.PI / 2;
+    grip.position.set(-0.73, -0.306, 0.384);
+    grip.rotation.x = 22 * (Math.PI / 180);
+    this.microAcConduitGroup.add(grip);
+
+    // EMT Conduit Hub on right (starts metallic conduit run)
+    const emtHub = new THREE.Mesh(gripGeo, emtMat);
+    emtHub.rotation.z = Math.PI / 2;
+    emtHub.position.set(-0.63, -0.306, 0.384);
+    emtHub.rotation.x = 22 * (Math.PI / 180);
+    this.microAcConduitGroup.add(emtHub);
+
+    // 3D Path: Sweeping from roof transition box to AC Combiner top
+    const microAcCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.62, -0.306, 0.384),
+      new THREE.Vector3(-0.48, -0.22, 0.22),
+      new THREE.Vector3(-0.30, -0.12, 0.02),
+      new THREE.Vector3(-0.06, 0.02, 0.01),
+      new THREE.Vector3(0.185, 0.02, 0.01),
+      new THREE.Vector3(0.185, -0.04, 0.01) // Directly mates into Inverter AC Isolator MCB on Combiner Box
+    ]);
+    this.microAcConduitCurve = microAcCurve;
+
+    const microAcGeo = new THREE.TubeGeometry(microAcCurve, 42, 0.013, 14, false);
+    const microAcMesh = new THREE.Mesh(microAcGeo, emtMat);
+    microAcMesh.castShadow = true;
+    microAcMesh.userData.isAcCombiner = true;
+    this.microAcConduitGroup.add(microAcMesh);
+
+    // Top entry compression gland on Combiner Box
+    const combGlandGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.02, 16);
+    const combGland = new THREE.Mesh(combGlandGeo, brassMat);
+    combGland.position.set(0.185, -0.04, 0.01);
+    this.microAcConduitGroup.add(combGland);
+
+    this.conduitGroup.add(this.microAcConduitGroup);
 
     // 6. RS485 Modbus Communication Conduit (DDSU666 to Inverter Comm Port)
     const rs485Curve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-0.08, -0.22, 0.02),
       new THREE.Vector3(-0.02, -0.28, 0.02),
       new THREE.Vector3(0.46, -0.28, 0.02),
-      new THREE.Vector3(0.80, -0.32, 0.02)
+      new THREE.Vector3(0.94, -0.28, 0.02)
     ]);
     this.rs485ConduitCurve = rs485Curve;
 
     const rs485ConduitGeo = new THREE.TubeGeometry(rs485Curve, 28, 0.006, 10, false);
     const rs485Mat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.7 });
     this.fadeMaterials.push(rs485Mat);
-    const rs485Conduit = new THREE.Mesh(rs485ConduitGeo, rs485Mat);
-    this.conduitGroup.add(rs485Conduit);
+    this.rs485Conduit = new THREE.Mesh(rs485ConduitGeo, rs485Mat);
+    this.conduitGroup.add(this.rs485Conduit);
 
     // 7. Combined Solar + PLN AC Conduit entering Consumer Main Distribution Panel
     const essentialLoadsGeo = new THREE.CylinderGeometry(0.013, 0.013, 0.11, 16);
@@ -646,21 +703,57 @@ export class PLNGridDistributionModel {
     groundWire.position.set(0, -0.65, -0.06);
     this.conduitGroup.add(groundWire);
 
+    // 8b. Equipment Grounding Interconnections (Continuous PE Bonding PUIL 2011)
+    // Left bonding wire: from groundBar (-0.48) curving up to roof array grounding lug
+    const groundRoofCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.09, -0.48, -0.06),
+      new THREE.Vector3(-0.35, -0.42, -0.02),
+      new THREE.Vector3(-0.55, -0.34, 0.18),
+      new THREE.Vector3(-0.68, -0.32, 0.36) // Connects to Rooftop Transition Grounding Lug
+    ]);
+    const groundRoofGeo = new THREE.TubeGeometry(groundRoofCurve, 24, 0.003, 8, false);
+    const groundRoof = new THREE.Mesh(groundRoofGeo, copperMat);
+    this.conduitGroup.add(groundRoof);
+
+    // Right bonding wire: from groundBar (-0.48) to Central Inverter & Battery chassis lugs
+    const groundEquipCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.09, -0.48, -0.06),
+      new THREE.Vector3(0.45, -0.48, -0.04),
+      new THREE.Vector3(0.75, -0.48, -0.02),
+      new THREE.Vector3(0.94, -0.48, -0.02) // Connects to Inverter & Battery PE Bus
+    ]);
+    const groundEquipGeo = new THREE.TubeGeometry(groundEquipCurve, 20, 0.003, 8, false);
+    const groundEquip = new THREE.Mesh(groundEquipGeo, copperMat);
+    this.conduitGroup.add(groundEquip);
+
     // Wall mounting compression straps for conduits
     const strapGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.016, 14);
     const strapMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.35 });
     this.fadeMaterials.push(strapMat);
 
+    this.centralInvStraps = [];
     [
-      { x: -0.16, y: 0.48, z: 0.01, rotZ: 0 },
-      { x: 0.42, y: -0.12, z: 0.01, rotZ: 0 },
-      { x: 0.65, y: -0.38, z: 0.01, rotZ: Math.PI / 2 },
-      { x: 0.16, y: -0.31, z: 0.01, rotZ: 0 }
+      { x: -0.16, y: 0.48, z: 0.01, rotZ: 0, isCentral: false },
+      { x: 0.42, y: -0.12, z: 0.01, rotZ: 0, isCentral: true },
+      { x: 0.65, y: -0.38, z: 0.01, rotZ: Math.PI / 2, isCentral: true },
+      { x: 0.85, y: -0.38, z: 0.01, rotZ: Math.PI / 2, isCentral: true },
+      { x: 0.16, y: -0.31, z: 0.01, rotZ: 0, isCentral: false }
     ].forEach((s) => {
       const strap = new THREE.Mesh(strapGeo, strapMat);
       strap.rotation.z = s.rotZ;
       strap.position.set(s.x, s.y, s.z);
       this.conduitGroup.add(strap);
+      if (s.isCentral) {
+        this.centralInvStraps.push(strap);
+      }
+    });
+
+    // Wall mounting straps for micro AC pipe
+    [-0.18, 0.06].forEach((sx) => {
+      const strap = new THREE.Mesh(strapGeo, strapMat);
+      strap.rotation.z = Math.PI / 2;
+      strap.position.set(sx, 0.02, 0.01);
+      this.microAcConduitGroup.add(strap);
     });
 
     this.group.add(this.conduitGroup);
@@ -880,6 +973,27 @@ export class PLNGridDistributionModel {
     // 5. Pulse PLN calibration LED only when on-grid (completely dark when off-grid blackout)
     if (this.plnPulseLedMat) {
       this.plnPulseLedMat.opacity = isOffGrid ? 0.0 : 0.95;
+    }
+  }
+
+  /**
+   * Reconfigures electrical conduits based on active inverter architecture ('micro' vs 'central')
+   */
+  setInverterMode(mode) {
+    this.inverterMode = mode;
+    const isCentral = (mode === 'central');
+
+    if (this.microAcConduitGroup) {
+      this.microAcConduitGroup.visible = !isCentral;
+    }
+    if (this.invAcConduitMesh) {
+      this.invAcConduitMesh.visible = isCentral;
+    }
+    if (this.rs485Conduit) {
+      this.rs485Conduit.visible = isCentral;
+    }
+    if (this.centralInvStraps) {
+      this.centralInvStraps.forEach(s => s.visible = isCentral);
     }
   }
 
