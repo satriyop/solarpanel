@@ -909,17 +909,6 @@ export class SolarPanelModel {
     qConnMesh.castShadow = true;
     inverterGroup.add(qConnMesh);
 
-    const acExitCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(invX + trunkLen / 2 + 0.028, invY - bodyH / 2 - 0.085, invZ + 0.08),
-      new THREE.Vector3(0.53, invY - bodyH / 2 - 0.07, invZ + 0.08),
-      new THREE.Vector3(0.58, -0.04, invZ + 0.06)
-    ]);
-    this.microAcExitCurve = acExitCurve;
-    const acExitGeo = new THREE.TubeGeometry(acExitCurve, 16, 0.007, 12, false);
-    const acExitMesh = new THREE.Mesh(acExitGeo, darkAlumMat);
-    acExitMesh.castShadow = true;
-    inverterGroup.add(acExitMesh);
-
     return inverterGroup;
   }
 

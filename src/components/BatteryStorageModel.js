@@ -386,7 +386,7 @@ export class BatteryStorageModel {
 
     // Bare copper equipment grounding wire (#6 AWG) between Inverter and Battery chassis
     const groundCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.72, -0.365, -0.02),
+      new THREE.Vector3(-0.72, -0.315, -0.02),
       new THREE.Vector3(-0.50, -0.44, -0.02),
       new THREE.Vector3(-0.21, -0.40, -0.02)
     ]);

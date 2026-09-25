@@ -540,6 +540,20 @@ export class PLNGridDistributionModel {
     aerialMesh.userData.tooltipDesc = "Kabel udara twisted 2-kawat dari Tiang Distribusi JTR PLN membawa daya 220V 50Hz ke kWh meter.";
     this.conduitGroup.add(aerialMesh);
 
+    // Service Entrance Dead-End Tension Wall Bracket & Clevis (Anchoring aerial drop)
+    const anchorBracketGeo = new THREE.BoxGeometry(0.038, 0.065, 0.038);
+    const anchorBracket = new THREE.Mesh(anchorBracketGeo, unistrutMat);
+    anchorBracket.position.set(-0.46, 0.90, 0.02);
+    this.conduitGroup.add(anchorBracket);
+
+    const spoolGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.03, 16);
+    const spoolMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.15, metalness: 0.1 }); // Glazed white porcelain
+    this.fadeMaterials.push(spoolMat);
+    const spool = new THREE.Mesh(spoolGeo, spoolMat);
+    spool.rotation.x = Math.PI / 2;
+    spool.position.set(-0.46, 0.89, 0.05);
+    this.conduitGroup.add(spool);
+
     // Service Entrance Wedge Tension Dead-End Clamp (Wedge Clamp NFA2X)
     const wedgeGeo = new THREE.BoxGeometry(0.024, 0.045, 0.028);
     const wedgeMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
@@ -585,20 +599,22 @@ export class PLNGridDistributionModel {
     this.conduitGroup.add(atsToComb);
 
     // 5. Interconnection Conduit: AC Inverter Output from Central Inverter (X=1.95m) into ATS
-    // Relative coordinates: Central Inverter AC port is at world (2.09, -0.18, -0.19)
+    // Relative coordinates: Central Inverter AC port is at world (2.09, -0.165, -0.19)
     // In local coords of PLN board (X=1.15, Y=0.20, Z=-0.20):
-    // Start at ATS right port (0.29, 0.24, 0.01) -> run down and right towards Central Inverter (0.94, -0.38, 0.01)
+    // Start at ATS right port (0.29, 0.24, 0.01) -> run down and right towards Central Inverter (0.94, -0.365, 0.01)
     const invAcInterconnectCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.29, 0.24, 0.01),
       new THREE.Vector3(0.36, 0.24, 0.01),
       new THREE.Vector3(0.42, 0.12, 0.01),
       new THREE.Vector3(0.42, -0.36, 0.01),
       new THREE.Vector3(0.55, -0.38, 0.01),
-      new THREE.Vector3(0.94, -0.38, 0.01) // Directly mates to Central Inverter AC drop pipe at X=2.09m world (0 gap)
+      new THREE.Vector3(0.85, -0.38, 0.01),
+      new THREE.Vector3(0.94, -0.38, 0.01),
+      new THREE.Vector3(0.94, -0.365, 0.01) // Directly mates into Central Inverter AC_GRID locknut!
     ]);
     this.invAcConduitCurve = invAcInterconnectCurve;
 
-    const invAcConduitGeo = new THREE.TubeGeometry(invAcInterconnectCurve, 36, 0.013, 14, false);
+    const invAcConduitGeo = new THREE.TubeGeometry(invAcInterconnectCurve, 38, 0.013, 14, false);
     this.invAcConduitMesh = new THREE.Mesh(invAcConduitGeo, emtMat);
     this.invAcConduitMesh.castShadow = true;
     this.invAcConduitMesh.userData.isAcCombiner = true;
@@ -614,33 +630,33 @@ export class PLNGridDistributionModel {
     const acBoxMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.6 });
     this.fadeMaterials.push(acBoxMat);
     const acBox = new THREE.Mesh(acBoxGeo, acBoxMat);
-    acBox.position.set(-0.68, -0.306, 0.384);
+    acBox.position.set(-0.63, -0.306, 0.384);
     acBox.rotation.x = 22 * (Math.PI / 180);
     acBox.userData.isAcCombiner = true;
     acBox.userData.tooltipTitle = 'Kotak Transisi AC Atap (Rooftop AC Transition Box)';
     acBox.userData.tooltipDesc = 'Titik transisi kabel rubber AC trunk dari microinverter menuju pipa konduit metalik EMT yang turun ke panel kombinator.';
     this.microAcConduitGroup.add(acBox);
 
-    // Cable Grip Gland on left (receives Microinverter AC trunk cable)
+    // Cable Grip Gland on left (receives Microinverter AC trunk cable flush)
     const gripGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.022, 16);
     const grip = new THREE.Mesh(gripGeo, brassMat);
     grip.rotation.z = Math.PI / 2;
-    grip.position.set(-0.73, -0.306, 0.384);
+    grip.position.set(-0.68, -0.306, 0.384);
     grip.rotation.x = 22 * (Math.PI / 180);
     this.microAcConduitGroup.add(grip);
 
     // EMT Conduit Hub on right (starts metallic conduit run)
     const emtHub = new THREE.Mesh(gripGeo, emtMat);
     emtHub.rotation.z = Math.PI / 2;
-    emtHub.position.set(-0.63, -0.306, 0.384);
+    emtHub.position.set(-0.58, -0.306, 0.384);
     emtHub.rotation.x = 22 * (Math.PI / 180);
     this.microAcConduitGroup.add(emtHub);
 
     // 3D Path: Sweeping from roof transition box to AC Combiner top
     const microAcCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.62, -0.306, 0.384),
-      new THREE.Vector3(-0.48, -0.22, 0.22),
-      new THREE.Vector3(-0.30, -0.12, 0.02),
+      new THREE.Vector3(-0.57, -0.306, 0.384),
+      new THREE.Vector3(-0.46, -0.22, 0.22),
+      new THREE.Vector3(-0.28, -0.12, 0.02),
       new THREE.Vector3(-0.06, 0.02, 0.01),
       new THREE.Vector3(0.185, 0.02, 0.01),
       new THREE.Vector3(0.185, -0.04, 0.01) // Directly mates into Inverter AC Isolator MCB on Combiner Box
@@ -666,11 +682,12 @@ export class PLNGridDistributionModel {
       new THREE.Vector3(-0.08, -0.22, 0.02),
       new THREE.Vector3(-0.02, -0.28, 0.02),
       new THREE.Vector3(0.46, -0.28, 0.02),
-      new THREE.Vector3(0.94, -0.28, 0.02)
+      new THREE.Vector3(0.94, -0.28, 0.02),
+      new THREE.Vector3(0.94, -0.32, 0.02)
     ]);
     this.rs485ConduitCurve = rs485Curve;
 
-    const rs485ConduitGeo = new THREE.TubeGeometry(rs485Curve, 28, 0.006, 10, false);
+    const rs485ConduitGeo = new THREE.TubeGeometry(rs485Curve, 30, 0.006, 10, false);
     const rs485Mat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.7 });
     this.fadeMaterials.push(rs485Mat);
     this.rs485Conduit = new THREE.Mesh(rs485ConduitGeo, rs485Mat);
@@ -697,11 +714,52 @@ export class PLNGridDistributionModel {
     groundBar.position.set(0, -0.48, -0.06);
     this.conduitGroup.add(groundBar);
 
-    // Copper grounding wire dropping to earth electrode
-    const groundWireGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.35, 12);
+    // Copper grounding wire dropping from bar to earth electrode clamp
+    const groundWireGeo = new THREE.CylinderGeometry(0.0035, 0.0035, 0.24, 12);
     const groundWire = new THREE.Mesh(groundWireGeo, copperMat);
-    groundWire.position.set(0, -0.65, -0.06);
+    groundWire.position.set(0, -0.60, -0.06);
     this.conduitGroup.add(groundWire);
+
+    // Heavy-Duty Cast Bronze Ground Rod Clamp (Klem Arde Tembaga PUIL 2011)
+    const clampGeo = new THREE.BoxGeometry(0.022, 0.024, 0.022);
+    const clampMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.85, roughness: 0.35 });
+    this.fadeMaterials.push(clampMat);
+    const earthClamp = new THREE.Mesh(clampGeo, clampMat);
+    earthClamp.position.set(0, -0.72, -0.06);
+    this.conduitGroup.add(earthClamp);
+
+    // Clamp Stainless Steel Bolt Heads
+    const boltGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.008, 6);
+    const boltHead = new THREE.Mesh(boltGeo, darkMat);
+    boltHead.rotation.x = Math.PI / 2;
+    boltHead.position.set(0, -0.72, -0.046);
+    this.conduitGroup.add(boltHead);
+
+    // Solid Copper-Clad Grounding Rod Electrode (Besi Arde Pasak Tembaga)
+    const rodGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.16, 16);
+    const earthRod = new THREE.Mesh(rodGeo, copperMat);
+    earthRod.position.set(0, -0.76, -0.06);
+    this.conduitGroup.add(earthRod);
+
+    // Concrete Grounding Inspection Pit (Bak Kontrol Grounding SNI / Earthing Inspection Well)
+    const pitGeo = new THREE.BoxGeometry(0.14, 0.05, 0.12);
+    const pitMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85, metalness: 0.1 });
+    this.fadeMaterials.push(pitMat);
+    const pitMesh = new THREE.Mesh(pitGeo, pitMat);
+    pitMesh.position.set(0, -0.81, -0.06);
+    pitMesh.userData.tooltipTitle = 'Bak Kontrol Pembumian (Earthing Inspection Pit - PUIL 2011 / SNI)';
+    pitMesh.userData.tooltipDesc = 'Titik inspeksi & uji tahanan pembumian tanah (target < 5 Ohm) menggunakan elektroda tembaga pejal (Solid Copper Rod) sedalam 3-6 meter.';
+    this.conduitGroup.add(pitMesh);
+
+    // Bak Kontrol Cast Iron Recessed Inspection Lid
+    const lidGeo = new THREE.BoxGeometry(0.11, 0.008, 0.09);
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7, metalness: 0.4 });
+    this.fadeMaterials.push(lidMat);
+    const lidMesh = new THREE.Mesh(lidGeo, lidMat);
+    lidMesh.position.set(0, -0.785, -0.06);
+    lidMesh.userData.tooltipTitle = 'Bak Kontrol Pembumian (Earthing Inspection Pit - PUIL 2011 / SNI)';
+    lidMesh.userData.tooltipDesc = 'Titik inspeksi & uji tahanan pembumian tanah (target < 5 Ohm) menggunakan elektroda tembaga pejal (Solid Copper Rod) sedalam 3-6 meter.';
+    this.conduitGroup.add(lidMesh);
 
     // 8b. Equipment Grounding Interconnections (Continuous PE Bonding PUIL 2011)
     // Left bonding wire: from groundBar (-0.48) curving up to roof array grounding lug
@@ -715,16 +773,24 @@ export class PLNGridDistributionModel {
     const groundRoof = new THREE.Mesh(groundRoofGeo, copperMat);
     this.conduitGroup.add(groundRoof);
 
-    // Right bonding wire: from groundBar (-0.48) to Central Inverter & Battery chassis lugs
+    // Right bonding wire: from groundBar (-0.48) to Central Inverter chassis lug
     const groundEquipCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.09, -0.48, -0.06),
       new THREE.Vector3(0.45, -0.48, -0.04),
       new THREE.Vector3(0.75, -0.48, -0.02),
-      new THREE.Vector3(0.94, -0.48, -0.02) // Connects to Inverter & Battery PE Bus
+      new THREE.Vector3(0.94, -0.44, -0.02),
+      new THREE.Vector3(0.98, -0.365, -0.02) // Directly terminates on Central Inverter chassis grounding lug
     ]);
-    const groundEquipGeo = new THREE.TubeGeometry(groundEquipCurve, 20, 0.003, 8, false);
+    const groundEquipGeo = new THREE.TubeGeometry(groundEquipCurve, 24, 0.003, 8, false);
     const groundEquip = new THREE.Mesh(groundEquipGeo, copperMat);
     this.conduitGroup.add(groundEquip);
+
+    // Brass crimp terminal lug sleeve at Inverter chassis ground termination
+    const equipLugGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.012, 12);
+    const equipLug = new THREE.Mesh(equipLugGeo, brassMat);
+    equipLug.rotation.x = Math.PI / 2;
+    equipLug.position.set(0.98, -0.365, -0.02);
+    this.conduitGroup.add(equipLug);
 
     // Wall mounting compression straps for conduits
     const strapGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.016, 14);
@@ -890,6 +956,36 @@ export class PLNGridDistributionModel {
       bMesh.castShadow = true;
       bMesh.userData.isConsumerUnit = true;
       this.group.add(bMesh);
+    });
+
+    // 6. Wall Penetration Wireway Trough (Kanal Trunking Distribusi Sirkuit Rumah)
+    // Seamlessly gathers the 3 branch conduits into the wall penetration raceway
+    const troughGeo = new THREE.BoxGeometry(0.30, 0.045, 0.038);
+    const troughMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.35 });
+    this.fadeMaterials.push(troughMat);
+    const troughMesh = new THREE.Mesh(troughGeo, troughMat);
+    troughMesh.position.set(0.16, -0.7625, 0.01);
+    troughMesh.castShadow = true;
+    troughMesh.userData.isConsumerUnit = true;
+    troughMesh.userData.tooltipTitle = 'Kanal Trunking Distribusi (Household Wireway Raceway)';
+    troughMesh.userData.tooltipDesc = 'Saluran trunking kabel metalik pelindung jalur instalasi NYM menuju jaringan beban rumah (AC, Kulkas, Penerangan/Stop Kontak).';
+    this.group.add(troughMesh);
+
+    // Front Cover Plate of Wireway Trough
+    const troughPlateGeo = new THREE.BoxGeometry(0.29, 0.038, 0.004);
+    const troughPlateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.3 });
+    this.fadeMaterials.push(troughPlateMat);
+    const troughPlate = new THREE.Mesh(troughPlateGeo, troughPlateMat);
+    troughPlate.position.set(0.16, -0.7625, 0.03);
+    this.group.add(troughPlate);
+
+    // 3 Entry Collars / Compression Bushings on Top of Trough
+    const collarGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.014, 16);
+    branchOffsets.forEach((bx, idx) => {
+      const spreadX = (idx - 1) * 0.04;
+      const collar = new THREE.Mesh(collarGeo, brassMat);
+      collar.position.set(0.16 + bx + spreadX, -0.74, 0.01);
+      this.group.add(collar);
     });
 
     this.group.add(this.consumerGroup);

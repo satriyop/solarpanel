@@ -363,10 +363,12 @@ export class CentralInverterModel {
 
     const groundWireCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.045, 0.038, 0.048),
-      new THREE.Vector3(0.06, 0.02, 0.07),
-      new THREE.Vector3(0.08, -0.002, 0.08)
+      new THREE.Vector3(0.065, 0.02, 0.075),
+      new THREE.Vector3(0.09, -0.002, 0.10),
+      new THREE.Vector3(0.12, -0.035, 0.13),
+      new THREE.Vector3(0.15, -0.075, 0.15)
     ]);
-    const groundWireGeo = new THREE.TubeGeometry(groundWireCurve, 12, 0.0025, 8, false);
+    const groundWireGeo = new THREE.TubeGeometry(groundWireCurve, 18, 0.0025, 8, false);
     const groundWireMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.95, roughness: 0.2 });
     this.fadeMaterials.push(groundWireMat);
     const groundWire = new THREE.Mesh(groundWireGeo, groundWireMat);
@@ -418,7 +420,7 @@ export class CentralInverterModel {
     const locknutMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.3 });
     this.fadeMaterials.push(locknutMat);
 
-    // Inverter entry locknut
+    // Inverter DC entry locknut
     const locknutInv = new THREE.Mesh(locknutGeo, locknutMat);
     locknutInv.position.set(-0.14, -0.365, 0.01);
     this.group.add(locknutInv);
@@ -435,12 +437,11 @@ export class CentralInverterModel {
       this.group.add(strap);
     });
 
-    // AC Grid Output Conduit (Dropping down towards house / panel)
-    const acPipeGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.28, 16);
-    const acPipe = new THREE.Mesh(acPipeGeo, emtMat);
-    acPipe.position.set(0.14, -0.52, 0.01);
-    acPipe.userData.isCentralInverter = true;
-    this.group.add(acPipe);
+    // Inverter AC Grid output locknut fitting (Mates flush to the incoming ATS interconnect conduit)
+    const locknutAc = new THREE.Mesh(locknutGeo, locknutMat);
+    locknutAc.position.set(0.14, -0.365, 0.01);
+    locknutAc.userData.isCentralInverter = true;
+    this.group.add(locknutAc);
   }
 
   /**

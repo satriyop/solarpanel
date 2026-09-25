@@ -161,20 +161,6 @@ export class PowerFlowController {
         speed: 0.28
       });
     }
-
-    // 3. Central Inverter AC Drop Conduit Particles
-    this.centralAcParticles = [];
-    for (let i = 0; i < 6; i++) {
-      const sprite = new THREE.Sprite(this.acMat.clone());
-      sprite.scale.set(0.046, 0.046, 1);
-      sprite.visible = (this.isVisible && this.inverterMode === 'central');
-      centralInverter.group.add(sprite);
-      this.centralAcParticles.push({
-        sprite,
-        t: i / 6,
-        speed: 0.38
-      });
-    }
   }
 
   setBatteryStorage(batteryStorage) {
@@ -342,9 +328,6 @@ export class PowerFlowController {
     if (this.centralDcParticles) {
       this.centralDcParticles.forEach(p => p.sprite.visible = (this.isVisible && isCentral));
     }
-    if (this.centralAcParticles) {
-      this.centralAcParticles.forEach(p => p.sprite.visible = (this.isVisible && isCentral));
-    }
     if (this.microAcToCombinerParticles) {
       this.microAcToCombinerParticles.forEach(p => p.sprite.visible = (this.isVisible && this.plnDistribution && this.plnDistribution.isVisible && !isCentral));
     }
@@ -380,9 +363,6 @@ export class PowerFlowController {
     }
     if (this.centralDcParticles) {
       this.centralDcParticles.forEach(p => p.sprite.visible = (visible && isCentral));
-    }
-    if (this.centralAcParticles) {
-      this.centralAcParticles.forEach(p => p.sprite.visible = (visible && isCentral));
     }
     if (this.microAcToCombinerParticles) {
       this.microAcToCombinerParticles.forEach(p => p.sprite.visible = (visible && this.plnDistribution && this.plnDistribution.isVisible && !isCentral));
@@ -509,16 +489,7 @@ export class PowerFlowController {
         });
       }
 
-      // C. Animate AC output particles dropping through the bottom AC conduit to grid
-      if (this.centralAcParticles) {
-        this.centralAcParticles.forEach((p) => {
-          p.t = (p.t + p.speed * powerFactor * delta) % 1.0;
-          p.sprite.position.set(0.14, -0.38 - p.t * 0.28, 0.01);
-          p.sprite.material.opacity = 0.75 * powerFactor;
-        });
-      }
-
-      // D. Pulse Central Inverter status ring & update live telemetry
+      // C. Pulse Central Inverter status ring & update live telemetry
       const pulseIntensity = 0.6 + 0.4 * Math.sin(this.time * (5.0 * powerFactor));
       this.centralInverter.setLedPulse(pulseIntensity * powerFactor);
       this.centralInverter.updateTelemetry(currentWatts, this.gridTopology);
