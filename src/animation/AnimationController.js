@@ -159,8 +159,8 @@ export class AnimationController {
     // 2.8 PLN Aerial Service Drop Cable (From Utility Pole)
     this.createAnnotationLabel({
       id: 'plnAerialDrop',
-      step: 'PLN 220V',
-      title: 'Kabel Sambungan Masuk PLN (NFA2X-T 2×10mm²)',
+      step: 'GRID',
+      title: 'Kabel Saluran Masuk PLN (NFA2X-T 220V)',
       desc: 'Saluran Udara JTR Tiang PLN 220V 50Hz • Memasok Defisit Daya Beban',
       offset: new THREE.Vector3(-0.42, 0.88, 0.08),
       isExternal: true,
@@ -578,10 +578,14 @@ export class AnimationController {
   updateLabels() {
     const widthHalf = this.scene.width / 2;
     const heightHalf = this.scene.height / 2;
+    const totalW = widthHalf * 2;
+    const totalH = heightHalf * 2;
     const tempV = new THREE.Vector3();
 
     // Only show detailed panel layer labels when partially or fully exploded
     const panelLabelOpacity = Math.max(0, (this.explodeProgress - 0.15) / 0.85);
+
+    const activeEntries = [];
 
     this.labelElements.forEach((item) => {
       // 1. Visibility Check
@@ -621,13 +625,76 @@ export class AnimationController {
         item.domElement.style.opacity = '0';
         item.domElement.style.pointerEvents = 'none';
       } else {
-        const screenX = (tempV.x * widthHalf) + widthHalf;
-        const screenY = -(tempV.y * heightHalf) + heightHalf;
-
-        item.domElement.style.opacity = targetOpacity.toFixed(2);
-        item.domElement.style.pointerEvents = 'auto';
-        item.domElement.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
+        const rawX = (tempV.x * widthHalf) + widthHalf;
+        const rawY = -(tempV.y * heightHalf) + heightHalf;
+        activeEntries.push({
+          item,
+          targetOpacity,
+          rawX,
+          rawY,
+          screenX: rawX,
+          screenY: rawY
+        });
       }
+    });
+
+    if (activeEntries.length === 0) return;
+
+    // Viewport safe boundary margins
+    const topSafe = 85;
+    const bottomSafe = totalH - 95;
+
+    // 2. Flip orientation if near right edge and clamp Y to safe viewport
+    activeEntries.forEach((entry) => {
+      entry.isFlipped = entry.screenX > totalW - 340;
+      entry.screenY = THREE.MathUtils.clamp(entry.rawY, topSafe, bottomSafe);
+    });
+
+    // 3. Collision Deconfliction: prevent overlapping labels on screen
+    const rightSide = activeEntries.filter(e => !e.isFlipped);
+    const leftSide = activeEntries.filter(e => e.isFlipped);
+
+    const deconflict = (list) => {
+      if (list.length <= 1) return;
+      list.sort((a, b) => a.screenY - b.screenY);
+      const minSpacing = 46;
+
+      // Downward relaxation pass
+      for (let i = 1; i < list.length; i++) {
+        const prev = list[i - 1];
+        const curr = list[i];
+        if (Math.abs(curr.screenX - prev.screenX) < 260) {
+          if (curr.screenY < prev.screenY + minSpacing) {
+            curr.screenY = prev.screenY + minSpacing;
+          }
+        }
+      }
+
+      // Upward relaxation pass if bottom exceeded
+      for (let i = list.length - 1; i > 0; i--) {
+        const curr = list[i];
+        const prev = list[i - 1];
+        if (curr.screenY > bottomSafe) {
+          curr.screenY = bottomSafe;
+        }
+        if (Math.abs(curr.screenX - prev.screenX) < 260 && prev.screenY > curr.screenY - minSpacing) {
+          prev.screenY = Math.max(topSafe, curr.screenY - minSpacing);
+        }
+      }
+    };
+
+    deconflict(rightSide);
+    deconflict(leftSide);
+
+    // 4. Apply clean transform and opacity
+    activeEntries.forEach((entry) => {
+      entry.item.domElement.classList.toggle('flip-left', entry.isFlipped);
+      entry.item.domElement.style.opacity = entry.targetOpacity.toFixed(2);
+      entry.item.domElement.style.pointerEvents = 'auto';
+      const transform = entry.isFlipped
+        ? `translate3d(${entry.screenX}px, ${entry.screenY}px, 0) translateX(-100%)`
+        : `translate3d(${entry.screenX}px, ${entry.screenY}px, 0)`;
+      entry.item.domElement.style.transform = transform;
     });
   }
 

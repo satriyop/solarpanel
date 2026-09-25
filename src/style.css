@@ -79,18 +79,28 @@ body {
   will-change: transform, opacity;
 }
 
+.layer-annotation.flip-left {
+  flex-direction: row-reverse;
+}
+
+.layer-annotation.flip-left .annotation-line {
+  background: linear-gradient(270deg, #0066cc, rgba(0, 102, 204, 0.2));
+}
+
 .annotation-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #0066cc;
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3), 0 0 10px rgba(0, 102, 204, 0.5);
+  flex-shrink: 0;
 }
 
 .annotation-line {
   width: 48px;
   height: 1px;
   background: linear-gradient(90deg, #0066cc, rgba(0, 102, 204, 0.2));
+  flex-shrink: 0;
 }
 
 .annotation-card {
@@ -105,19 +115,25 @@ body {
   padding: 6px 14px;
   border-radius: 8px;
   white-space: nowrap;
+  pointer-events: auto;
 }
 
 .annotation-step {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #ffffff;
   background: #0066cc;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .annotation-content {
