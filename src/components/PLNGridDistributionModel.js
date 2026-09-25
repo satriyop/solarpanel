@@ -542,7 +542,7 @@ export class PLNGridDistributionModel {
 
     // Service Entrance Dead-End Tension Wall Bracket & Clevis (Anchoring aerial drop)
     const anchorBracketGeo = new THREE.BoxGeometry(0.038, 0.065, 0.038);
-    const anchorBracket = new THREE.Mesh(anchorBracketGeo, unistrutMat);
+    const anchorBracket = new THREE.Mesh(anchorBracketGeo, emtMat);
     anchorBracket.position.set(-0.46, 0.90, 0.02);
     this.conduitGroup.add(anchorBracket);
 
