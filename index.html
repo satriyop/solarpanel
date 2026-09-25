@@ -5,6 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>Residential Solar Panel — 3D Exploded View Diagram</title>
     <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      window.addEventListener('error', function(e) {
+        var box = document.getElementById('debug-err-box');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'debug-err-box';
+          box.style.cssText = 'position:fixed;top:80px;left:20px;right:20px;z-index:9999999;background:rgba(220,38,38,0.95);color:#fff;padding:16px 20px;border-radius:10px;font-family:monospace;font-size:13px;line-height:1.5;box-shadow:0 8px 30px rgba(0,0,0,0.5);white-space:pre-wrap;pointer-events:auto;';
+          document.body.appendChild(box);
+        }
+        box.innerHTML = '<strong>❌ JavaScript Runtime Error:</strong>\n' + (e.error ? (e.error.stack || e.error.message) : (e.message + ' at ' + e.filename + ':' + e.lineno));
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var box = document.getElementById('debug-err-box');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'debug-err-box';
+          box.style.cssText = 'position:fixed;top:80px;left:20px;right:20px;z-index:9999999;background:rgba(220,38,38,0.95);color:#fff;padding:16px 20px;border-radius:10px;font-family:monospace;font-size:13px;line-height:1.5;box-shadow:0 8px 30px rgba(0,0,0,0.5);white-space:pre-wrap;pointer-events:auto;';
+          document.body.appendChild(box);
+        }
+        box.innerHTML = '<strong>❌ Unhandled Promise Rejection:</strong>\n' + (e.reason ? (e.reason.stack || e.reason) : e);
+      });
+    </script>
   </head>
   <body class="studio-dark">
     <!-- Studio Viewport -->

@@ -10,8 +10,8 @@ export class StudioScene {
     this.container = canvasContainer;
 
     // Dimensions
-    this.width = this.container.clientWidth;
-    this.height = this.container.clientHeight;
+    this.width = this.container.clientWidth || window.innerWidth || 1280;
+    this.height = this.container.clientHeight || window.innerHeight || 720;
 
     this.initRenderer();
     this.initScene();

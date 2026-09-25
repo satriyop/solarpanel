@@ -6,9 +6,10 @@ import { CentralInverterModel } from './components/CentralInverterModel.js';
 import { BatteryStorageModel } from './components/BatteryStorageModel.js';
 import { PLNGridDistributionModel } from './components/PLNGridDistributionModel.js';
 
-// Initialize application on DOM content loaded
-window.addEventListener('DOMContentLoaded', () => {
-  const canvasContainer = document.getElementById('canvas-container');
+// Initialize application
+function startApplication() {
+  try {
+    const canvasContainer = document.getElementById('canvas-container');
   const labelsContainer = document.getElementById('labels-container');
 
   // 1. Initialize 3D Studio Environment
@@ -680,6 +681,18 @@ window.addEventListener('DOMContentLoaded', () => {
     powerFlow.update(delta, currentWatts);
     studio.render();
   }
-
   requestAnimationFrame(animate);
-});
+  } catch (err) {
+    console.error('Fatal initialization error:', err);
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;top:80px;left:20px;right:20px;z-index:9999999;background:rgba(220,38,38,0.95);color:#fff;padding:16px 20px;border-radius:10px;font-family:monospace;font-size:13px;line-height:1.5;box-shadow:0 8px 30px rgba(0,0,0,0.5);white-space:pre-wrap;pointer-events:auto;';
+    box.innerHTML = '<strong>❌ Fatal Initialization Error:</strong>\n' + (err.stack || err.message || err);
+    document.body.appendChild(box);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApplication);
+} else {
+  startApplication();
+}
