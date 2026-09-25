@@ -730,7 +730,7 @@ export class PLNGridDistributionModel {
 
     // Clamp Stainless Steel Bolt Heads
     const boltGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.008, 6);
-    const boltHead = new THREE.Mesh(boltGeo, darkMat);
+    const boltHead = new THREE.Mesh(boltGeo, emtMat);
     boltHead.rotation.x = Math.PI / 2;
     boltHead.position.set(0, -0.72, -0.046);
     this.conduitGroup.add(boltHead);
